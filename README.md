@@ -1,9 +1,14 @@
 # odsio
-ODS I/O for Julia Dict or DF using the python ezodf module 
+ODS I/O for Julia Dictionaries or DataFrames using the python ezodf module 
 
-(EMPTY package. Doesn't do anything)
+[![Build Status](https://travis-ci.org/sylvaticus/OdsIO.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/OdsIO.jl)
 
-This package will provide the following functions:
+[![Coverage Status](https://coveralls.io/repos/sylvaticus/OdsIO.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/sylvaticus/OdsIO.jl?branch=master)
+
+[![codecov.io](http://codecov.io/github/sylvaticus/OdsIO.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/OdsIO.jl?branch=master)
+
+
+This package provides the following functions:
 
 ### ODS reading:
 - ods2dics(filename;sheetsNames=[],sheetsPos=[],ranges=[])
@@ -19,9 +24,9 @@ The following functions are provided for convenience:
 - ods2dic(filename; sheetName=Null,sheetPos=Null,range=())
 - ods2df(filename;sheetName=Null,sheetPos=Null,range=())
 
-Where sheetName, sheetPos and range are scalars and return directly a single dic/df. One of sheetName or sheetPos must be provided or the array version of the funciton will be called instead.
+Where sheetName, sheetPos and range are scalars and return directly a single dic/df. If none of sheetName or sheetPos are provided the function return the data of the first sheet.
 
-### ODS writing:
+### ODS writing (NOT YET IMPLEMENTED):
 - dic2ods(dic, filename; topLefts=[])
 - df2ods(df, filename; topLefts=[])
 
@@ -42,3 +47,8 @@ This package requires:
 - a working local installation of Python with the python [ezodf](https://github.com/T0ha/ezodf) module already installed
 - the [DataFrames](https://github.com/JuliaStats/DataFrames.jl) package if one want to work with DataFrames.
 
+### Known limitations
+
+As the data is saved in a dictionary, the order of the columns is not maintained.
+
+It may be slow with very large data.
