@@ -1,11 +1,18 @@
-# odsio
-ODS I/O for Julia Dictionaries or DataFrames using the python ezodf module 
+# OdsIO
+
+ODS I/O for Julia Dictionaries or DataFrames using the python ezodf module.
 
 [![Build Status](https://travis-ci.org/sylvaticus/OdsIO.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/OdsIO.jl)
 
 [![Coverage Status](https://coveralls.io/repos/sylvaticus/OdsIO.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/sylvaticus/OdsIO.jl?branch=master)
 
 [![codecov.io](http://codecov.io/github/sylvaticus/OdsIO.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/OdsIO.jl?branch=master)
+
+
+### Installation
+Untill this (experimental!) package is not registered in the official Julia package repository you can install it with:
+
+`Pkg.clone("git://github.com/sylvaticus/OdsIO.jl.git")`
 
 
 This package provides the following functions:
