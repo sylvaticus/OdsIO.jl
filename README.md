@@ -6,14 +6,14 @@ ODS I/O for Julia Dict or DF using the python ezodf module
 This package will provide the following functions:
 
 ### ODS reading:
-- ods2dic(filename;sheetsNames=[],sheetsPos=[],ranges=[])
-- ods2df(filename;sheetsNames=[],sheetsPos=[],ranges=[])
+- ods2dics(filename;sheetsNames=[],sheetsPos=[],ranges=[])
+- ods2dfs(filename;sheetsNames=[],sheetsPos=[],ranges=[])
 
 sheetsNames (optional) are a list of sheet names from which to import data  
 sheetsPos (optional) aree a list of sheet positions (starting from 1) from which to import data  
 sheetsNames and sheetsPos can not be given together  
 ranges (optional) is a list of pair of touples defining the ranges in each sheet to import ((tlr,trc),(brr,brc))  
-The functions return a list of dictionaries or DataFrames indexed by position or names
+The functions return a list of dictionaries or DataFrames indexed by position or names (this is the reason of the `s` in the function name)
 
 The following functions are provided for convenience:
 - ods2dic(filename; sheetName=Null,sheetPos=Null,range=())
