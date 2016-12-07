@@ -1,6 +1,8 @@
 __precompile__()
 
 module OdsIO
+
+export ods2dics, ods2dic, ods2dfs, ods2df, odsio_test
 using PyCall
 
 dfPackIsInstalled = true
@@ -113,7 +115,7 @@ function ods2df(filename;sheetName=nothing,sheetPos=nothing,range=nothing)
     return DataFrame(ods2dic(filename;sheetName=sheetName,sheetPos=sheetPos,range=range))
 end
 
-function test()
+function odsio_test()
   println("Congratulations, OdsIO module is correctly installed !")
 end
 
