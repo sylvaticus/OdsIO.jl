@@ -10,7 +10,7 @@ ODS I/O for Julia Dictionaries or DataFrames using the python ezodf module.
 
 
 ## Installation
-Untill this (experimental!) package is not registered in the official Julia package repository you can install it with:
+Untill this (experimental!) package is not yet registered in the official Julia package repository you can install it with:
 
 `Pkg.clone("git://github.com/sylvaticus/OdsIO.jl.git")`
 
