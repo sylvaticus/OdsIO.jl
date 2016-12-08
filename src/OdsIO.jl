@@ -2,7 +2,7 @@
 
 module OdsIO
 
-export ods2dics, ods2dic, ods2dfs, ods2df, odsio_test
+export ods2dics, ods2dic, ods2dfs, ods2df, odsio_test, odsio_autotest
 using PyCall
 
 dfPackIsInstalled = true
@@ -232,6 +232,17 @@ function odsio_test()
     error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
   end
   println("Congratulations, both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed, you can start using them !")
+end
+
+
+"""
+    odsio_test()
+
+Check that the module compiles and the PyCall dependency is respected (it doesn't however check for python ezodf presence)
+
+"""
+function odsio_autotest()
+  return 1
 end
 
 end # module OdsIO
