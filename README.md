@@ -136,7 +136,7 @@ The following functions are provided by convenience:
 - df2ods(df, filename; topLeft=(1,1))
 
 Where dic and df are single dic/df. 
-
+ 
 ## Testing
 
     odsio_test()
