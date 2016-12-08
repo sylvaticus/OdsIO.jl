@@ -1,4 +1,4 @@
-__precompile__()
+# __precompile__()
 
 module OdsIO
 
@@ -13,6 +13,29 @@ catch
 end
 
 
+"""
+    ods2dics(filename; <keyword arguments>)
+
+Return a dictionary of dictionaries indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
+
+# Arguments
+* `sheetsNames=[]`: the list of sheet names from which to import data.
+* `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
+* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+
+# Notes
+* sheetsNames and sheetsPos can not be given together
+* ranges is defined using integer positions for both rows and columns
+* individual dictionaries are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+
+# Examples
+```julia
+julia> outDic  = ods2dics("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))])
+Dict{Any,Any} with 2 entries:
+  3 => Dict{Any,Any}(Pair{Any,Any}("c",Any[33.0,43.0,53.0,63.0]),Pair{Any,Any}("b",Any[32.0,42.0,52.0,62.0]),Pair{Any,Any}("d",Any[34.0,44.0,54.…
+  1 => Dict{Any,Any}(Pair{Any,Any}("c",Any[23.0,33.0]),Pair{Any,Any}("b",Any[22.0,32.0]),Pair{Any,Any}("a",Any[21.0,31.0]))
+```
+"""
 function ods2dics(filename;sheetsNames=[],sheetsPos=[],ranges=[])
     @pyimport ezodf
     toReturn = Dict()
@@ -86,6 +109,31 @@ function ods2dics(filename;sheetsNames=[],sheetsPos=[],ranges=[])
 end # end functionSS
 
 
+"""
+    ods2dic(filename; <keyword arguments>)
+
+Return a dictionary from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
+
+# Arguments
+* `sheetName=nothing`: the sheet name from which to import data.
+* `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
+* `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+
+# Notes
+* sheetName and sheetPos can not be given together
+* if both sheetName and sheetPos are not specified data from the first sheet is returned
+* ranges is defined using integer positions for both rows and columns
+* the dictionary is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+
+# Examples
+```julia
+julia> outDic  = ods2dic("spreadsheet.ods";sheetPos=3,range=((2,2),(6,4)))
+Dict{Any,Any} with 3 entries:
+  "c" => Any[33.0,43.0,53.0,63.0]
+  "b" => Any[32.0,42.0,52.0,62.0]
+  "d" => Any[34.0,44.0,54.0,64.0]
+```
+"""
 function ods2dic(filename;sheetName=nothing,sheetPos=nothing,range=nothing)
     sheetsNames_h = (sheetName == nothing ? []: [sheetName])
     sheetsPos_h = (sheetPos == nothing ? []: [sheetPos])
@@ -96,6 +144,32 @@ function ods2dic(filename;sheetName=nothing,sheetPos=nothing,range=nothing)
     end
 end
 
+
+
+"""
+    ods2dfs(filename; <keyword arguments>)
+
+Return a dictionary of dataframes indexed by position or name in the orifinal OpenDocument Spreadsheet (.ods) file.
+
+# Arguments
+* `sheetsNames=[]`: the list of sheet names from which to import data.
+* `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
+* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+
+# Notes
+* sheetsNames and sheetsPos can not be given together
+* ranges is defined using integer positions for both rows and columns
+* dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* this function requires the package `DataFrames`
+
+# Examples
+```julia
+julia> outDic  = ods2dfs("spreadsheet.ods";sheetsNames=["Sheet2","Sheet3"],ranges=[((1,1),(3,3)),((2,2),(6,4))])
+Dict{Any,Any} with 2 entries:
+  3 => 4×3 DataFrames.DataFrame…
+  1 => 2×3 DataFrames.DataFrame…
+```
+"""
 function ods2dfs(filename;sheetsNames=[],sheetsPos=[],ranges=[])
     if !dfPackIsInstalled
         error("To use the function ods2dfs you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
@@ -108,6 +182,35 @@ function ods2dfs(filename;sheetsNames=[],sheetsPos=[],ranges=[])
     return dicToReturn
 end
 
+
+"""
+    ods2df(filename; <keyword arguments>)
+
+Return a `DataFrame` from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
+
+# Arguments
+* `sheetName=nothing`: the sheet name from which to import data.
+* `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
+* `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+
+# Notes
+* sheetName and sheetPos can not be given together
+* if both sheetName and sheetPos are not specified data from the first sheet is returned
+* ranges is defined using integer positions for both rows and columns
+* the dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* this function requires the package `DataFrames`
+
+# Examples
+```julia
+julia> outDic = ods2df("spreadsheet.ods";sheetName="Sheet2")
+2×3 DataFrames.DataFrame
+│ Row │ a    │ b    │ c    │
+├─────┼──────┼──────┼──────┤
+│ 1   │ 21.0 │ 22.0 │ 23.0 │
+│ 2   │ 31.0 │ 32.0 │ 33.0 │
+
+```
+"""
 function ods2df(filename;sheetName=nothing,sheetPos=nothing,range=nothing)
     if !dfPackIsInstalled
         error("To use the function ods2df you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
@@ -115,9 +218,20 @@ function ods2df(filename;sheetName=nothing,sheetPos=nothing,range=nothing)
     return DataFrame(ods2dic(filename;sheetName=sheetName,sheetPos=sheetPos,range=range))
 end
 
-function odsio_test()
-  println("Congratulations, OdsIO module is correctly installed !")
-end
 
+"""
+    odsio_test()
+
+Provide a test to check that both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed.
+
+"""
+function odsio_test()
+  try
+    @pyimport ezodf
+  catch
+    error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
+  end
+  println("Congratulations, both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed, you can start using them !")
+end
 
 end # module OdsIO
