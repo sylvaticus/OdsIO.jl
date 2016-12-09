@@ -2,7 +2,7 @@
 
 module OdsIO
 
-export ods2dics, ods2dic, ods2dfs, ods2df, odsio_test, odsio_autotest
+export ods_readall, ods_read, ods2dic, ods2dfs, ods2df, odsio_test, odsio_autotest
 using PyCall
 
 dfPackIsInstalled = true
@@ -14,32 +14,45 @@ end
 
 
 """
-    ods2dics(filename; <keyword arguments>)
+    ods_readall(filename; <keyword arguments>)
 
-Return a dictionary of dictionaries indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
+Return a dictionary of tables|dictionaries|dataframes indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
 
 # Arguments
 * `sheetsNames=[]`: the list of sheet names from which to import data.
 * `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
 * `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `innerType="Matrix"`: the type of the inner container returned. Either "Matrix", "Dict" or "DataFrame"
 
 # Notes
 * sheetsNames and sheetsPos can not be given together
 * ranges is defined using integer positions for both rows and columns
-* individual dictionaries are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* individual dictionaries or dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* innerType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
+* using innerType="DataFrame" requires the package `DataFrames` and also preserves original column order
 
 # Examples
 ```julia
-julia> outDic  = ods2dics("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))])
+julia> outDic  = ods2dics("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))], innerType="Dict")
 Dict{Any,Any} with 2 entries:
   3 => Dict{Any,Any}(Pair{Any,Any}("c",Any[33.0,43.0,53.0,63.0]),Pair{Any,Any}("b",Any[32.0,42.0,52.0,62.0]),Pair{Any,Any}("d",Any[34.0,44.0,54.…
   1 => Dict{Any,Any}(Pair{Any,Any}("c",Any[23.0,33.0]),Pair{Any,Any}("b",Any[22.0,32.0]),Pair{Any,Any}("a",Any[21.0,31.0]))
 ```
 """
-function ods2dics(filename;sheetsNames=[],sheetsPos=[],ranges=[])
+function ods_readall(filename;sheetsNames=[],sheetsPos=[],ranges=[],innerType="Matrix")
+    try
+       @pyimport ezodf
+    catch
+      error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
+    end
     @pyimport ezodf
-    toReturn = Dict()
-    doc = ezodf.opendoc(filename)
+    toReturn = Dict() # The outer container is always a dictionary
+    try
+      global doc = ezodf.opendoc(filename)
+    catch
+      error("I can not open for reading file $filename at $(pwd())")
+    end
+
     nsheets = length(doc[:sheets])
     toReturnKeyType = "name"
     if !isempty(sheetsNames) && !isempty(sheetsPos)
@@ -60,49 +73,76 @@ function ods2dics(filename;sheetsNames=[],sheetsPos=[],ranges=[])
             try
                 if !isempty(ranges) && !isempty(ranges[sheetsCounter])
                     r_min     = ranges[sheetsCounter][1][1]
-                    r_max     = ranges[sheetsCounter][2][1]
+                    r_max     = min(ranges[sheetsCounter][2][1],sheet[:nrows]())
                     c_min     = ranges[sheetsCounter][1][2]
-                    c_max     = ranges[sheetsCounter][2][2]
+                    c_max     = min(ranges[sheetsCounter][2][2],sheet[:ncols]())
                 end
             catch
                 error("There is a problem with the range. Range should be defined as a list of pair of touples ((tlr,trc),(brr,brc)) for each sheet to import, using integer positions." )
             end
-            df_dict   = Dict()
-            col_index = Dict()
-
-            for (i, row) in enumerate(sheet[:rows]())
-                # row is a list of cells
-                if i == r_min # header row
-                    for (j,cell) in enumerate(row)
-                        if(j>=c_min && j<=c_max)
-                            df_dict[cell[:value]] = []
-                            col_index[j]=cell[:value]
+            if innerType=="Dict"
+                df_dict   = Dict()
+                col_index = Dict()
+                for (i, row) in enumerate(sheet[:rows]())
+                    # row is a list of cells
+                    if i == r_min # header row
+                        for (j,cell) in enumerate(row)
+                            if(j>=c_min && j<=c_max)
+                                df_dict[cell[:value]] = []
+                                col_index[j]=cell[:value]
+                            end
+                            if j > c_max
+                                break
+                            end
                         end
-                        if j > c_max
-                            break
+                    end # end header row
+                    if (i> r_min && i <= r_max) # data row
+                        for (j, cell) in enumerate(row)
+                            if(j>=c_min && j<=c_max)
+                                # use header instead of column index
+                                push!(df_dict[col_index[j]],cell[:value])
+                            end
+                            if j> c_max
+                                break
+                            end
                         end
+                    end # data row
+                    if i > r_max
+                        break
                     end
-                end # end header row
-                if (i> r_min && i <= r_max) # data row
-                    for (j, cell) in enumerate(row)
-                        if(j>=c_min && j<=c_max)
-                            # use header instead of column index
-                            push!(df_dict[col_index[j]],cell[:value])
-                        end
-                        if j> c_max
-                            break
-                        end
-                    end
-                end # data row
-                if i > r_max
-                    break
+                end # end for each row loop
+                if toReturnKeyType == "name"
+                    toReturn[sheet[:name]] = df_dict
+                else
+                    toReturn[is] = df_dict
                 end
-            end # end for each row loop
-            if toReturnKeyType == "name"
-                toReturn[sheet[:name]] = df_dict
-            else
-                toReturn[is] = df_dict
-            end
+            elseif (innerType=="Matrix" || innerType=="DataFrame")
+                innerMatrix = Array{Any,2}(r_max-r_min+1,c_max-c_min+1)
+                r=1
+                for (i, row) in enumerate(sheet[:rows]())
+                    if (i>=r_min && i <= r_max) # data row
+                        c=1
+                        for (j, cell) in enumerate(row)
+
+                            if (j>=c_min && j<=c_max)
+                                innerMatrix[[r],[c]]=cell[:value]
+                                c = c+1
+                            end
+                        end
+                        r = r+1
+                    end
+                end
+                if innerType=="Matrix"
+                    toReturnKeyType == "name"? toReturn[sheet[:name]] = innerMatrix : toReturn[is] = innerMatrix
+                else
+                    if !dfPackIsInstalled
+                        error("To use the function ods2dfs you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
+                    end
+                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   convert(DataFrame, Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])]))  : toReturn[is] = convert(DataFrame, Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])]))
+                end # innerType is really a df
+            else # end innerTpe is a Dict check
+                error("Only 'Matrix', 'Dict' or 'DataFrame' are supported as innerType/retType.'")
+            end # end innerTpe is a Dict or Matrix check
         end # end check is a sheet to retain
     end # for each sheet
     return toReturn
@@ -110,112 +150,43 @@ end # end functionSS
 
 
 """
-    ods2dic(filename; <keyword arguments>)
+    ods_read(filename; <keyword arguments>)
 
-Return a dictionary from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
+Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
 
 # Arguments
 * `sheetName=nothing`: the sheet name from which to import data.
 * `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
 * `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `retType="Matrix"`: the type of container returned. Either "Matrix", "Dict" or "DataFrame"
 
 # Notes
 * sheetName and sheetPos can not be given together
 * if both sheetName and sheetPos are not specified data from the first sheet is returned
 * ranges is defined using integer positions for both rows and columns
-* the dictionary is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* the dictionary or dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* retType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
+* using retType="DataFrame" requires the package `DataFrames` and also preserves original column order
 
 # Examples
 ```julia
-julia> outDic  = ods2dic("spreadsheet.ods";sheetPos=3,range=((2,2),(6,4)))
-Dict{Any,Any} with 3 entries:
-  "c" => Any[33.0,43.0,53.0,63.0]
-  "b" => Any[32.0,42.0,52.0,62.0]
-  "d" => Any[34.0,44.0,54.0,64.0]
+julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
+3×3 DataFrames.DataFrame
+│ Row │ x1   │ x2   │ x3   │
+├─────┼──────┼──────┼──────┤
+│ 1   │ "a"  │ "b"  │ "c"  │
+│ 2   │ 21.0 │ 22.0 │ 23.0 │
+│ 3   │ 31.0 │ 32.0 │ 33.0 │
 ```
 """
-function ods2dic(filename;sheetName=nothing,sheetPos=nothing,range=nothing)
+function ods_read(filename;sheetName=nothing,sheetPos=nothing,range=nothing, retType="Matrix")
     sheetsNames_h = (sheetName == nothing ? []: [sheetName])
     sheetsPos_h = (sheetPos == nothing ? []: [sheetPos])
     ranges_h = (range == nothing ? []: [range])
-    dictDict = ods2dics(filename;sheetsNames=sheetsNames_h,sheetsPos=sheetsPos_h,ranges=ranges_h)
-    for (k,v) in dictDict
+    dict = ods_readall(filename;sheetsNames=sheetsNames_h,sheetsPos=sheetsPos_h,ranges=ranges_h,innerType=retType)
+    for (k,v) in dict
        return v # only one value should be present
     end
-end
-
-
-
-"""
-    ods2dfs(filename; <keyword arguments>)
-
-Return a dictionary of dataframes indexed by position or name in the orifinal OpenDocument Spreadsheet (.ods) file.
-
-# Arguments
-* `sheetsNames=[]`: the list of sheet names from which to import data.
-* `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
-* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
-
-# Notes
-* sheetsNames and sheetsPos can not be given together
-* ranges is defined using integer positions for both rows and columns
-* dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
-* this function requires the package `DataFrames`
-
-# Examples
-```julia
-julia> outDic  = ods2dfs("spreadsheet.ods";sheetsNames=["Sheet2","Sheet3"],ranges=[((1,1),(3,3)),((2,2),(6,4))])
-Dict{Any,Any} with 2 entries:
-  3 => 4×3 DataFrames.DataFrame…
-  1 => 2×3 DataFrames.DataFrame…
-```
-"""
-function ods2dfs(filename;sheetsNames=[],sheetsPos=[],ranges=[])
-    if !dfPackIsInstalled
-        error("To use the function ods2dfs you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
-    end
-    dictDict = ods2dics(filename;sheetsNames=sheetsNames,sheetsPos=sheetsPos,ranges=ranges)
-    dicToReturn = Dict()
-    for (k,v) in dictDict
-       dicToReturn[k] = DataFrame(v)
-    end
-    return dicToReturn
-end
-
-
-"""
-    ods2df(filename; <keyword arguments>)
-
-Return a `DataFrame` from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
-
-# Arguments
-* `sheetName=nothing`: the sheet name from which to import data.
-* `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
-* `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
-
-# Notes
-* sheetName and sheetPos can not be given together
-* if both sheetName and sheetPos are not specified data from the first sheet is returned
-* ranges is defined using integer positions for both rows and columns
-* the dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
-* this function requires the package `DataFrames`
-
-# Examples
-```julia
-julia> outDic = ods2df("spreadsheet.ods";sheetName="Sheet2")
-2×3 DataFrames.DataFrame
-│ Row │ a    │ b    │ c    │
-├─────┼──────┼──────┼──────┤
-│ 1   │ 21.0 │ 22.0 │ 23.0 │
-│ 2   │ 31.0 │ 32.0 │ 33.0 │
-
-```
-"""
-function ods2df(filename;sheetName=nothing,sheetPos=nothing,range=nothing)
-    if !dfPackIsInstalled
-        error("To use the function ods2df you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
-    end
-    return DataFrame(ods2dic(filename;sheetName=sheetName,sheetPos=sheetPos,range=range))
 end
 
 

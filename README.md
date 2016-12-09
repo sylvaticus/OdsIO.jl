@@ -19,111 +19,67 @@ This package provides the following functions:
 
 ## ODS reading:
 
-### ods2dics()
+### ods_readall()
 
-    ods2dics(filename; <keyword arguments>)
+    ods_readall(filename; <keyword arguments>)
 
-Return a dictionary of dictionaries indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
+Return a dictionary of tables|dictionaries|dataframes indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
 
 #### Arguments
 * `sheetsNames=[]`: the list of sheet names from which to import data.
 * `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
 * `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `innerType="Matrix"`: the type of the inner container returned. Either "Matrix", "Dict" or "DataFrame"
 
 #### Notes
-* sheetsNames and sheetsPos can not be given together  
+* sheetsNames and sheetsPos can not be given together
 * ranges is defined using integer positions for both rows and columns
-* individual dictionaries are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* individual dictionaries or dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* innerType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
+* using innerType="DataFrame" requires the package `DataFrames` and also preserves original column order
 
 #### Examples
 ```julia
-julia> outDic  = ods2dics("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))])
+julia> outDic  = ods2dics("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))], innerType="Dict")
 Dict{Any,Any} with 2 entries:
   3 => Dict{Any,Any}(Pair{Any,Any}("c",Any[33.0,43.0,53.0,63.0]),Pair{Any,Any}("b",Any[32.0,42.0,52.0,62.0]),Pair{Any,Any}("d",Any[34.0,44.0,54.…
   1 => Dict{Any,Any}(Pair{Any,Any}("c",Any[23.0,33.0]),Pair{Any,Any}("b",Any[22.0,32.0]),Pair{Any,Any}("a",Any[21.0,31.0]))
 ```
 
-### ods2dfs()
 
-    ods2dfs(filename; <keyword arguments>)
+### ods_read()
 
-Return a dictionary of dataframes indexed by position or name in the orifinal OpenDocument Spreadsheet (.ods) file.
+    ods_read(filename; <keyword arguments>)
 
-#### Arguments
-* `sheetsNames=[]`: the list of sheet names from which to import data.
-* `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
-* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
-
-#### Notes
-* sheetsNames and sheetsPos can not be given together  
-* ranges is defined using integer positions for both rows and columns
-* dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
-* this function requires the package `DataFrames`
-
-#### Examples
-```julia
-julia> outDic  = ods2dfs("spreadsheet.ods";sheetsNames=["Sheet2","Sheet3"],ranges=[((1,1),(3,3)),((2,2),(6,4))])
-Dict{Any,Any} with 2 entries:
-  3 => 4×3 DataFrames.DataFrame…
-  1 => 2×3 DataFrames.DataFrame…
-```
-
-### ods2dic()
-
-    ods2dic(filename; <keyword arguments>)
-
-Return a dictionary from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
+Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
 
 #### Arguments
 * `sheetName=nothing`: the sheet name from which to import data.
 * `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
 * `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `retType="Matrix"`: the type of container returned. Either "Matrix", "Dict" or "DataFrame"
 
 #### Notes
 * sheetName and sheetPos can not be given together
 * if both sheetName and sheetPos are not specified data from the first sheet is returned
 * ranges is defined using integer positions for both rows and columns
-* the dictionary is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* the dictionary or dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
+* retType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
+* using retType="DataFrame" requires the package `DataFrames` and also preserves original column order
 
 #### Examples
 ```julia
-julia> outDic  = ods2dic("spreadsheet.ods";sheetPos=3,range=((2,2),(6,4)))
-Dict{Any,Any} with 3 entries:
-  "c" => Any[33.0,43.0,53.0,63.0]
-  "b" => Any[32.0,42.0,52.0,62.0]
-  "d" => Any[34.0,44.0,54.0,64.0]
-```
-
-## ods2df()
-
-    ods2df(filename; <keyword arguments>)
-
-Return a `DataFrame` from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
-
-# Arguments
-* `sheetName=nothing`: the sheet name from which to import data.
-* `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
-* `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
-
-# Notes
-* sheetName and sheetPos can not be given together
-* if both sheetName and sheetPos are not specified data from the first sheet is returned
-* ranges is defined using integer positions for both rows and columns
-* the dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
-* this function requires the package `DataFrames`
-
-# Examples
-```julia
-julia> outDic = ods2df("spreadsheet.ods";sheetName="Sheet2")
-2×3 DataFrames.DataFrame
-│ Row │ a    │ b    │ c    │
+julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
+3×3 DataFrames.DataFrame
+│ Row │ x1   │ x2   │ x3   │
 ├─────┼──────┼──────┼──────┤
-│ 1   │ 21.0 │ 22.0 │ 23.0 │
-│ 2   │ 31.0 │ 32.0 │ 33.0 │
-
+│ 1   │ "a"  │ "b"  │ "c"  │
+│ 2   │ 21.0 │ 22.0 │ 23.0 │
+│ 3   │ 31.0 │ 32.0 │ 33.0 │
 ```
 
-## ODS writing (NOT YET IMPLEMENTED):
+
+## ODS writing (NOT YET IMPLEMENTED. SCHEDULED FOR FEB 2017):
 - dic2ods(dic, filename; topLefts=[])
 - df2ods(df, filename; topLefts=[])
 
