@@ -138,7 +138,7 @@ function ods_readall(filename;sheetsNames=[],sheetsPos=[],ranges=[],innerType="M
                     if !dfPackIsInstalled
                         error("To use the function ods2dfs you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
                     end
-                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   convert(DataFrame, Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])]))  : toReturn[is] = convert(DataFrame, Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])]))
+                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   DataFrame(Any[@view innerMatrix[2:end, i] for i in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :])) : toReturn[is] = DataFrame(Any[@view innerMatrix[2:end, i] for i in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :]))
                 end # innerType is really a df
             else # end innerTpe is a Dict check
                 error("Only 'Matrix', 'Dict' or 'DataFrame' are supported as innerType/retType.'")
