@@ -12,7 +12,6 @@ catch
     dfPackIsInstalled = false
 end
 
-
 """
     ods_readall(filename; <keyword arguments>)
 
@@ -39,7 +38,7 @@ Dict{Any,Any} with 2 entries:
   1 => Dict{Any,Any}(Pair{Any,Any}("c",Any[23.0,33.0]),Pair{Any,Any}("b",Any[22.0,32.0]),Pair{Any,Any}("a",Any[21.0,31.0]))
 ```
 """
-function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String[],sheetsPos::AbstractVector=Int64[],ranges::AbstractVector=[],innerType::AbstractString="Matrix")
+function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String[],sheetsPos::AbstractVector=Int64[],ranges::AbstractVector=Tuple{Tuple{Int64,Int64},Tuple{Int64,Int64}}[],innerType::AbstractString="Matrix")
 
     try
        @pyimport ezodf
@@ -73,57 +72,21 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
             c_max = sheet[:ncols]()
             try
                 if !isempty(ranges) && !isempty(ranges[sheetsCounter])
-                    r_min     = ranges[sheetsCounter][1][1]
-                    r_max     = min(ranges[sheetsCounter][2][1],sheet[:nrows]())
-                    c_min     = ranges[sheetsCounter][1][2]
-                    c_max     = min(ranges[sheetsCounter][2][2],sheet[:ncols]())
+                    r_min::Int64     = ranges[sheetsCounter][1][1]
+                    r_max::Int64     = min(ranges[sheetsCounter][2][1],sheet[:nrows]())
+                    c_min::Int64     = ranges[sheetsCounter][1][2]
+                    c_max::Int64     = min(ranges[sheetsCounter][2][2],sheet[:ncols]())
                 end
             catch
                 error("There is a problem with the range. Range should be defined as a list of pair of touples ((tlr,trc),(brr,brc)) for each sheet to import, using integer positions." )
             end
-            if innerType=="Dict"
-                df_dict   = Dict()
-                col_index = Dict()
-                for (i, row) in enumerate(sheet[:rows]())
-                    # row is a list of cells
-                    if i == r_min # header row
-                        for (j,cell) in enumerate(row)
-                            if(j>=c_min && j<=c_max)
-                                df_dict[cell[:value]] = []
-                                col_index[j]=cell[:value]
-                            end
-                            if j > c_max
-                                break
-                            end
-                        end
-                    end # end header row
-                    if (i> r_min && i <= r_max) # data row
-                        for (j, cell) in enumerate(row)
-                            if(j>=c_min && j<=c_max)
-                                # use header instead of column index
-                                push!(df_dict[col_index[j]],cell[:value])
-                            end
-                            if j> c_max
-                                break
-                            end
-                        end
-                    end # data row
-                    if i > r_max
-                        break
-                    end
-                end # end for each row loop
-                if toReturnKeyType == "name"
-                    toReturn[sheet[:name]] = df_dict
-                else
-                    toReturn[is] = df_dict
-                end
-            elseif (innerType=="Matrix" || innerType=="DataFrame")
+            if (innerType=="Matrix" || innerType=="Dict" || innerType=="DataFrame" )
                 innerMatrix = Array{Any,2}(r_max-r_min+1,c_max-c_min+1)
-                r=1
-                for (i, row) in enumerate(sheet[:rows]())
+                r::Int64=1
+                for (i::Int64, row) in enumerate(sheet[:rows]())
                     if (i>=r_min && i <= r_max) # data row
-                        c=1
-                        for (j, cell) in enumerate(row)
+                        c::Int64=1
+                        for (j::Int64, cell) in enumerate(row)
 
                             if (j>=c_min && j<=c_max)
                                 innerMatrix[[r],[c]]=cell[:value]
@@ -135,11 +98,13 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 end
                 if innerType=="Matrix"
                     toReturnKeyType == "name"? toReturn[sheet[:name]] = innerMatrix : toReturn[is] = innerMatrix
-                else
+                elseif innerType == "Dict"
+                    toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
+                elseif innerType == "DataFrame"
                     if !dfPackIsInstalled
                         error("To use the function ods2dfs you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
                     end
-                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   DataFrame(Any[@view innerMatrix[2:end, i] for i in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :])) : toReturn[is] = DataFrame(Any[@view innerMatrix[2:end, i] for i in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :]))
+                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   DataFrame(Any[@view innerMatrix[2:end, i] for i::Int64 in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :])) : toReturn[is] = DataFrame(Any[@view innerMatrix[2:end, i] for i in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :]))
                 end # innerType is really a df
             else # end innerTpe is a Dict check
                 error("Only 'Matrix', 'Dict' or 'DataFrame' are supported as innerType/retType.'")
@@ -180,7 +145,7 @@ julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
 │ 3   │ 31.0 │ 32.0 │ 33.0 │
 ```
 """
-function ods_read(filename;sheetName=nothing,sheetPos=nothing,range=nothing, retType="Matrix")
+function ods_read(filename::AbstractString; sheetName=nothing, sheetPos=nothing, range=nothing, retType::AbstractString="Matrix")
     sheetsNames_h = (sheetName == nothing ? []: [sheetName])
     sheetsPos_h = (sheetPos == nothing ? []: [sheetPos])
     ranges_h = (range == nothing ? []: [range])
