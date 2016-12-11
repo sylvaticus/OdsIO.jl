@@ -4,13 +4,7 @@ module OdsIO
 
 export ods_readall, ods_read, odsio_test, odsio_autotest
 using PyCall
-
-dfPackIsInstalled = true
-try
-    using DataFrames
-catch
-    dfPackIsInstalled = false
-end
+using DataFrames
 
 """
     ods_readall(filename; <keyword arguments>)
@@ -28,7 +22,7 @@ Return a dictionary of tables|dictionaries|dataframes indexed by position or nam
 * ranges is defined using integer positions for both rows and columns
 * individual dictionaries or dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
 * innerType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
-* using innerType="DataFrame" requires the package `DataFrames` and also preserves original column order
+* using innerType="DataFrame" also preserves original column order
 
 # Examples
 ```julia
@@ -101,9 +95,6 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 elseif innerType == "Dict"
                     toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
-                    if !dfPackIsInstalled
-                        error("To use the function ods2dfs you need to have the DataFrames module installed. Run 'Pkg.add(DataFrame)' to install the DataFrames package.")
-                    end
                     toReturnKeyType == "name"? toReturn[sheet[:name]] =   DataFrame(Any[@view innerMatrix[2:end, i] for i::Int64 in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :])) : toReturn[is] = DataFrame(Any[@view innerMatrix[2:end, i] for i in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :]))
                 end # innerType is really a df
             else # end innerTpe is a Dict check
@@ -132,7 +123,7 @@ Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a
 * ranges is defined using integer positions for both rows and columns
 * the dictionary or dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
 * retType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
-* using retType="DataFrame" requires the package `DataFrames` and also preserves original column order
+* using retType="DataFrame" also preserves original column order
 
 # Examples
 ```julia

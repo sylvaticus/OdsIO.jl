@@ -36,7 +36,7 @@ Return a dictionary of tables|dictionaries|dataframes indexed by position or nam
 * ranges is defined using integer positions for both rows and columns
 * individual dictionaries or dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
 * innerType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
-* using innerType="DataFrame" requires the package `DataFrames` and also preserves original column order
+* using innerType="DataFrame" also preserves original column order
 
 #### Examples
 ```julia
@@ -65,7 +65,7 @@ Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a
 * ranges is defined using integer positions for both rows and columns
 * the dictionary or dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
 * retType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
-* using retType="DataFrame" requires the package `DataFrames` and also preserves original column order
+* using retType="DataFrame" also preserves original column order
 
 #### Examples
 ```julia
@@ -103,9 +103,9 @@ Provide a test to check that both the Julia 'OdsIO' and Python 'ezodf' modules a
 ## Requirements
 
 This package requires:
-- the [PyCall](https://github.com/JuliaPy/PyCall.jl) module to call Python
+- the [PyCall](https://github.com/JuliaPy/PyCall.jl) package to call Python
 - a working local installation of Python with the python [ezodf](https://github.com/T0ha/ezodf) module already installed
-- the [DataFrames](https://github.com/JuliaStats/DataFrames.jl) package if one want to work with DataFrames.
+- the [DataFrames](https://github.com/JuliaStats/DataFrames.jl) package in order to return DataFrames.
 
 ## Known limitations
 
