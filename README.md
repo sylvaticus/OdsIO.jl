@@ -104,7 +104,7 @@ Provide a test to check that both the Julia 'OdsIO' and Python 'ezodf' modules a
 
 This package requires:
 - the [PyCall](https://github.com/JuliaPy/PyCall.jl) package to call Python
-- a working local installation of Python with the python [ezodf](https://github.com/T0ha/ezodf) module already installed
+- a working local installation of Python with the python [ezodf](https://github.com/T0ha/ezodf) module already installed (if the `ezodf` module is not available and you have no access to the local python installation, you can use PyCall to try to install the `ezodf` using pip.. see [here](https://gist.github.com/Luthaf/368a23981c8ec095c3eb))
 - the [DataFrames](https://github.com/JuliaStats/DataFrames.jl) package in order to return DataFrames.
 
 ## Known limitations
