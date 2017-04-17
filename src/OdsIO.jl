@@ -7,6 +7,66 @@ using PyCall
 using DataFrames
 
 """
+   ods_write(filename,data)
+
+Write tabular data (2d Array, DataFrame or Dictionary) to OpenDocument spreadsheet format.
+
+# Arguments
+* `filename`:    an existing ods file or the one to create.
+* `data=Dict()`: a dictionary of locations in the files where to export the data => the actual data (see notes).
+
+# Notes:
+* The locations where to save the data (the keys in the dictionary) are a tuple of tree elements:
+  The first one is the sheet name or sheet position, the other two are the index of row and column of the top
+  left corner where to export the data.
+  If using sheet positions, these must be within current file boundaries. If you want to create new sheets,
+  use names.
+* The actual data exported are either a Matrix (2D Array), a DataFrame or a Dictionary. In case of DataFrame or
+  Dictionary the headers ARE exported, so if you don't want them first convert the DataFrame (or Dictionary)
+  to a Matrix.
+
+"""
+
+function ods_write(filename::AbstractString, data::Union{
+    Dict{Tuple{String,Int64,Int64},Array{Any,2}},
+    Dict{Tuple{Int64,Int64,Int64},Array{Any,2}},
+    Dict{Tuple{String,Int64,Int64},DataFrames.DataFrame},
+    Dict{Tuple{Int64,Int64,Int64},DataFrames.DataFrame},
+    Dict{Tuple{String,Int64,Int64},Dict{Any}},
+    Dict{Tuple{Int64,Int64,Int64},Dict{Any}},
+    })
+    try
+        @pyimport ezodf
+    catch
+        error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
+    end
+    @pyimport ezodf
+
+    if isfile(filename)
+        doc = ezodf.opendoc(filename)
+        if doc[:doctype] == "ods"
+            destDoc = doc
+        else
+            error("Trying to write to existing file $filename , but it is not an Opendocument spreadsheet.")
+        end
+    else
+        destDoc = ezodf.newdoc(doctype="ods", filename=filename)
+    end
+
+    sheet = ezodf.Sheet("SHEET", size=(10, 10))
+    push!(destDoc[:sheets],sheet)
+    sheet["A1"].set_value("cell with text")
+    sheet["B2"].set_value(3.141592)
+    destDoc.save()
+
+end
+
+anarray =[[1,2,3] [4,5,6]]
+adf = DataFrame(test = [1,2,3], pippo=[2,3,4])
+test = Dict(("asheet",1,3) => adf, ("asheet2",1,3) => adf)
+ods_write("newspreadsheet.ods",test)
+
+"""
     ods_readall(filename; <keyword arguments>)
 
 Return a dictionary of tables|dictionaries|dataframes indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
