@@ -1,5 +1,18 @@
 # __precompile__()
 
+# To allow precompilation
+#[pyimport()]: Unlike the @pyimport macro, this does not define a Julia module and members cannot be accessed with s.name.
+#
+#https://github.com/JuliaPy/PyCall.jl/issues/328
+#const  ezodf = PyNULL()
+#
+#function __init__()
+#    copy!(ezodf, pyimport(" ezodf"))
+#end
+
+
+
+
 module OdsIO
 
 export ods_readall, ods_read, odsio_test, odsio_autotest
@@ -54,9 +67,10 @@ function ods_write(filename::AbstractString, data::Union{
     end
 
     sheet = ezodf.Sheet("SHEET", size=(10, 10))
-    push!(destDoc[:sheets],sheet)
-    sheet["A1"].set_value("cell with text")
-    sheet["B2"].set_value(3.141592)
+    push!(destDoc[:sheets],sheet) # .. stuck here..
+    # see https://discourse.julialang.org/t/pycall-append-returns-pyerror-pylist-append-bad-argument-to-internal-function-error/3263
+    sheet[1,1][:set_value]("cell with text")
+    sheet[2,2][:set_value](3.141592)
     destDoc.save()
 
 end
