@@ -11,3 +11,6 @@ ods_write(filename,Dict(("TestSheet",3,2)=>testData))
 testDataOut = ods_read(filename;sheetName="TestSheet",range=((3,2),(7,3)))
 rm(filename)
 @test convert(Array{Any,2}, testData) == testDataOut
+
+# Test 3: Fake test, this should not pass
+# @test 1 == 2

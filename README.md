@@ -1,14 +1,14 @@
 # OdsIO
 
-ODS I/O for Julia Dictionaries or DataFrames using the python ezodf module.
+Open Document Format Spreadsheet (ODS) I/O for Julia using the python ezodf module.
+
+It allows to export (import) data from (to) Julia to (from) LibreOffice, OpenOffice and any other spreadsheet software that implements the OpenDocument specifications.
 
 [![Build Status](https://travis-ci.org/sylvaticus/OdsIO.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/OdsIO.jl)
-
 [![Coverage Status](https://coveralls.io/repos/sylvaticus/OdsIO.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/sylvaticus/OdsIO.jl?branch=master)
-
 [![codecov.io](http://codecov.io/github/sylvaticus/OdsIO.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/OdsIO.jl?branch=master)
 
-(autotests may incorrectly report build problems, as this module depends on a specific python module, `ezodf`. In Julia 0.5 it should work fine)
+(autotests may incorrectly report build problems, as this module depends on a specific python module, `ezodf`. In Julia 0.5 and 0.6 it should work fine)
 
 ## Installation
 `Pkg.add("OdsIO")`
@@ -105,9 +105,9 @@ julia> ods_write("TestSpreadsheet.ods",Dict(("TestSheet",3,2)=>[[1,2,3,4,5] [6,7
 
 ## Testing
 
-    odsio_test()
+Pkg.test("OdsIO")
 
-Provide a test to check that both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed.
+Provide tests to check that both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed. It may return an error if the file system is not writeable.
 
 
 ## Requirements
