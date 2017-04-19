@@ -5,10 +5,10 @@ Open Document Format Spreadsheet (ODS) I/O for Julia using the python ezodf modu
 It allows to export (import) data from (to) Julia to (from) LibreOffice, OpenOffice and any other spreadsheet software that implements the OpenDocument specifications.
 
 [![Build Status](https://travis-ci.org/sylvaticus/OdsIO.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/OdsIO.jl)
-[![Coverage Status](https://coveralls.io/repos/sylvaticus/OdsIO.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/sylvaticus/OdsIO.jl?branch=master)
 [![codecov.io](http://codecov.io/github/sylvaticus/OdsIO.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/OdsIO.jl?branch=master)
 
-(autotests may incorrectly report build problems, as this module depends on a specific python module, `ezodf`. In Julia 0.5 and 0.6 it should work fine)
+[![OdsIO](http://pkg.julialang.org/badges/OdsIO_0.5.svg)](http://pkg.julialang.org/?pkg=OdsIO&ver=0.5)
+[![OdsIO](http://pkg.julialang.org/badges/OdsIO_0.6.svg)](http://pkg.julialang.org/?pkg=OdsIO&ver=0.6)
 
 ## Installation
 `Pkg.add("OdsIO")`
