@@ -1,28 +1,28 @@
-# __precompile__()
-
-# To allow precompilation
-#[pyimport()]: Unlike the @pyimport macro, this does not define a Julia module and members cannot be accessed with s.name.
-#
-#https://github.com/JuliaPy/PyCall.jl/issues/328
-#const  ezodf = PyNULL()
-#
-#function __init__()
-#    copy!(ezodf, pyimport(" ezodf"))
-#end
-
-
-
+__precompile__()
 
 module OdsIO
 
-export ods_readall, ods_read, odsio_test, odsio_autotest
-using PyCall
-using DataFrames
+export ods_readall, ods_read, ods_write, odsio_test, odsio_autotest
+using PyCall, DataFrames, DataStructures
+
+# This to allow precompilation
+# Unlike the @pyimport macro, this does not define a Julia module and members cannot be accessed with s.name.
+# @see https://github.com/JuliaPy/PyCall.jl/issues/328
+const  ezodf = PyNULL()
+
+function __init__()
+    try
+        pyimport("ezodf")
+    catch
+        error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
+    end
+    copy!(ezodf, pyimport("ezodf"))
+end
 
 """
    ods_write(filename,data)
 
-Write tabular data (2d Array, DataFrame or Dictionary) to OpenDocument spreadsheet format.
+Write tabular data (2D Array, DataFrame or Dictionary) to OpenDocument spreadsheet format.
 
 # Arguments
 * `filename`:    an existing ods file or the one to create.
@@ -32,53 +32,96 @@ Write tabular data (2d Array, DataFrame or Dictionary) to OpenDocument spreadshe
 * The locations where to save the data (the keys in the dictionary) are a tuple of tree elements:
   The first one is the sheet name or sheet position, the other two are the index of row and column of the top
   left corner where to export the data.
-  If using sheet positions, these must be within current file boundaries. If you want to create new sheets,
+  If using sheet positions, these must be within current file sheets boundaries. If you want to create new sheets,
   use names.
-* The actual data exported are either a Matrix (2D Array), a DataFrame or a Dictionary. In case of DataFrame or
-  Dictionary the headers ARE exported, so if you don't want them first convert the DataFrame (or Dictionary)
-  to a Matrix.
+* The actual data exported are either a Matrix (2D Array), a DataFrame or an OrderedDict. In case of DataFrame or
+  OrderedDict the headers ARE exported, so if you don't want them, first convert the DataFrame (or Dictionary)
+  to a Matrix. In case of OrderedDict, the inner data must all have the same length.
 
+# Examples
+```julia
+julia> ods_write("TestSpreadsheet.ods",Dict(("TestSheet",3,2)=>[[1,2,3,4,5] [6,7,8,9,10]]))
+```
 """
-
-function ods_write(filename::AbstractString, data::Union{
-    Dict{Tuple{String,Int64,Int64},Array{Any,2}},
-    Dict{Tuple{Int64,Int64,Int64},Array{Any,2}},
-    Dict{Tuple{String,Int64,Int64},DataFrames.DataFrame},
-    Dict{Tuple{Int64,Int64,Int64},DataFrames.DataFrame},
-    Dict{Tuple{String,Int64,Int64},Dict{Any}},
-    Dict{Tuple{Int64,Int64,Int64},Dict{Any}},
-    })
-    try
-        @pyimport ezodf
-    catch
-        error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
-    end
-    @pyimport ezodf
-
+function ods_write(filename::AbstractString, data::Any)
+    #try
+    #    @pyimport ezodf
+    #catch
+    #    error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
+    #end
+    #@pyimport ezodf
+    nSheetsOrig = 0
     if isfile(filename)
-        doc = ezodf.opendoc(filename)
+        doc = ezodf[:opendoc](filename)
         if doc[:doctype] == "ods"
             destDoc = doc
+            nSheetsOrig = length(doc[:sheets])
         else
             error("Trying to write to existing file $filename , but it is not an Opendocument spreadsheet.")
         end
     else
-        destDoc = ezodf.newdoc(doctype="ods", filename=filename)
+        # new document
+        destDoc = ezodf[:newdoc](doctype="ods", filename=filename)
     end
 
-    sheet = ezodf.Sheet("SHEET", size=(10, 10))
-    push!(destDoc[:sheets],sheet) # .. stuck here..
-    # see https://discourse.julialang.org/t/pycall-append-returns-pyerror-pylist-append-bad-argument-to-internal-function-error/3263
-    sheet[1,1][:set_value]("cell with text")
-    sheet[2,2][:set_value](3.141592)
-    destDoc.save()
+    # Checking data is a dictionary
+    if ! isa(data,Dict)
+        error("The data parameter must be a dictionary of location_where_to_export_the_data -> exported_data. Type `?ods_write` for more informations.")
+    end
+    # Looping over each item to be exported
+    for (k,v) in data
+        # Checking k is a tuple of three elements
+        if isa(k, Tuple) && length(k) == 3 && (isa(k[1], String) || isa(k[1], Int64)) && isa(k[2], Int) && isa(k[3], Int)
+            # pass
+        else
+            error("Each key of the dictionary must be a 3-elements tuple where the first one is the sheet name or position, and the second and third ones are respectivelly row and column index of the top-left cell where to paste the data (1-index based).")
+        end
+        # Converting DataFrames and OrderedDicts to matrices..
+        if isa(v, DataFrame)
+            v = vcat(names(v)',convert(Matrix{Any}, v))
+        elseif isa(v, OrderedDict)
+            v = hcat([append!(Any[k],convert(Array{Any},v2))  for(k,v2) in v] ...)
+        elseif isa(v, Array) && ndims(v) == 2
+            # pass
+        else
+            error("Data is of unknow type. Only 2D Arrays (Matrices), dataframes and ordered dictionaries are supported.")
+        end
+        sRSize = k[2] + size(v)[1] -1; sCSize = k[3] + size(v)[2] -1;
+        sheet = ezodf[:Table]()
+        newsheet = false
+        if isa(k[1],Int)
+            if k[1] > nSheetsOrig
+                error("You specified a sheet position that is bigger than the number of sheet in the destination ods file. Use sheet names to add a new sheet.")
+            end
+            sheet = destDoc[:sheets][k[1]]
+        else
+            try
+                sheet = destDoc[:sheets][:__getitem__](k[1])
+            catch
+                # this is a new sheet
+                sheet = ezodf[:Sheet](k[1], size=(sRSize, sCSize))
+                destDoc[:sheets][:__iadd__](sheet)
+            end
+        end
+        # adding empty rows/cols to fit with the new data
+        if sheet[:nrows]()<sRSize
+            sheet[:append_rows](max(0,sRSize-sheet[:nrows]()))
+        end
+        if sheet[:ncols]()<sCSize
+            sheet[:append_columns](max(0,sCSize-sheet[:ncols]())) ## adding empty rows to suit the new data
+        end
 
+        for r in range(1,size(v)[1])
+            r2 = k[2]+r-1
+            for c in range(1,size(v)[2])
+                c2 = k[3] + c -1
+                sheet[r2,c2][:set_value](v[r,c])
+            end
+        end
+    end # end for each (k,v) in data
+    destDoc[:backup] = false
+    destDoc[:save]()
 end
-
-anarray =[[1,2,3] [4,5,6]]
-adf = DataFrame(test = [1,2,3], pippo=[2,3,4])
-test = Dict(("asheet",1,3) => adf, ("asheet2",1,3) => adf)
-ods_write("newspreadsheet.ods",test)
 
 """
     ods_readall(filename; <keyword arguments>)
@@ -88,7 +131,7 @@ Return a dictionary of tables|dictionaries|dataframes indexed by position or nam
 # Arguments
 * `sheetsNames=[]`: the list of sheet names from which to import data.
 * `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
-* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
 * `innerType="Matrix"`: the type of the inner container returned. Either "Matrix", "Dict" or "DataFrame"
 
 # Notes
@@ -108,15 +151,15 @@ Dict{Any,Any} with 2 entries:
 """
 function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String[],sheetsPos::AbstractVector=Int64[],ranges::AbstractVector=Tuple{Tuple{Int64,Int64},Tuple{Int64,Int64}}[],innerType::AbstractString="Matrix")
 
-    try
-       @pyimport ezodf
-    catch
-      error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
-    end
-    @pyimport ezodf
+    #try
+    #   @pyimport ezodf
+    #catch
+    #  error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
+    #end
+    #@pyimport ezodf
     toReturn = Dict() # The outer container is always a dictionary
     try
-      global doc = ezodf.opendoc(filename)
+      global doc = ezodf[:opendoc](filename)
     catch
       error("I can not open for reading file $filename at $(pwd())")
     end
@@ -146,7 +189,7 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     c_max::Int64     = min(ranges[sheetsCounter][2][2],sheet[:ncols]())
                 end
             catch
-                error("There is a problem with the range. Range should be defined as a list of pair of touples ((tlr,trc),(brr,brc)) for each sheet to import, using integer positions." )
+                error("There is a problem with the range. Range should be defined as a list of pair of touples ((tlr,tlc),(brr,brc)) for each sheet to import, using integer positions." )
             end
             if (innerType=="Matrix" || innerType=="Dict" || innerType=="DataFrame" )
                 innerMatrix = Array{Any,2}(r_max-r_min+1,c_max-c_min+1)
@@ -188,7 +231,7 @@ Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a
 # Arguments
 * `sheetName=nothing`: the sheet name from which to import data.
 * `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
-* `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `range=nothing`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
 * `retType="Matrix"`: the type of container returned. Either "Matrix", "Dict" or "DataFrame"
 
 # Notes
@@ -228,12 +271,23 @@ Provide a test to check that both the Julia 'OdsIO' and Python 'ezodf' modules a
 
 """
 function odsio_test()
-  try
-    @pyimport ezodf
-  catch
-    error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
-  end
-  println("Congratulations, both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed, you can start using them !")
+    #try
+    #  @pyimport ezodf
+    #catch
+    #  error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
+    #end
+    testData = [[1,2,3,4,5] [6,7,8,9,10]]
+    filename = "testspreadheet"
+    ods_write(filename,Dict(("TestSheet",3,2)=>testData))
+    testDataOut = ods_read(filename;sheetName="TestSheet",range=((3,2),(7,3)))
+    rm(filename)
+    if( convert(Array{Any,2}, testData) == testDataOut)
+        println("Congratulations, both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed, you can start using them !")
+        return true
+    else
+        println("Something didn't go well. It could also be non writable filesystem.")
+        return false
+    end
 end
 
 

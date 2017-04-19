@@ -1,23 +1,13 @@
 using OdsIO
 using Base.Test
 
-
-
-
-#odsio_test()
-
-#outDic1  = ods2dics("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))])
-#outDic2  = ods2dics("spreadsheet.ods";sheetsNames=["Sheet1","Sheet3"],ranges=[(),((2,2),(6,4))])
-#outDic3  = ods2dics("spreadsheet.ods";ranges=[(),(),((2,2),(6,4))])
-#outDic4  = ods2dics("spreadsheet.ods")
-#outDic5  = ods2dics("spreadsheet.ods";sheetsNames=["Sheet3"],ranges=[((2,1),(9,7))])
-#outDic6  = ods2dic("spreadsheet.ods";sheetName="Sheet2")
-#outDir7  = ods2dic("spreadsheet.ods";sheetPos=3,range=((2,2),(6,4)))
-#outDir8  = ods2dic("spreadsheet.ods")
-#outDic9  = ods2dfs("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))])
-#outDic11 = ods2df("spreadsheet.ods";sheetName="Sheet2")
-#println("Done!")
-
-
-# write your own tests here
+# TEST 1: Just that everything is installed
 @test 1 == odsio_autotest()
+
+# Test 2: Testing that what is written with ods_write then is read back with ods_read
+testData = [[1,2,3,4,5] [6,7,8,9,10]]
+filename = "testspreadheet"
+ods_write(filename,Dict(("TestSheet",3,2)=>testData))
+testDataOut = ods_read(filename;sheetName="TestSheet",range=((3,2),(7,3)))
+rm(filename)
+@test convert(Array{Any,2}, testData) == testDataOut

@@ -8,12 +8,10 @@ ODS I/O for Julia Dictionaries or DataFrames using the python ezodf module.
 
 [![codecov.io](http://codecov.io/github/sylvaticus/OdsIO.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/OdsIO.jl?branch=master)
 
+(autotests may incorrectly report build problems, as this module depends on a specific python module, `ezodf`. In Julia 0.5 it should work fine)
 
 ## Installation
-Untill this (experimental!) package is not yet registered in the official Julia package repository you can install it with:
-
-`Pkg.clone("git://github.com/sylvaticus/OdsIO.jl.git")`
-
+`Pkg.add("OdsIO")`
 
 This package provides the following functions:
 
@@ -28,7 +26,7 @@ Return a dictionary of tables|dictionaries|dataframes indexed by position or nam
 #### Arguments
 * `sheetsNames=[]`: the list of sheet names from which to import data.
 * `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
-* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
 * `innerType="Matrix"`: the type of the inner container returned. Either "Matrix", "Dict" or "DataFrame"
 
 #### Notes
@@ -46,7 +44,6 @@ Dict{Any,Any} with 2 entries:
   1 => Dict{Any,Any}(Pair{Any,Any}("c",Any[23.0,33.0]),Pair{Any,Any}("b",Any[22.0,32.0]),Pair{Any,Any}("a",Any[21.0,31.0]))
 ```
 
-
 ### ods_read()
 
     ods_read(filename; <keyword arguments>)
@@ -56,7 +53,7 @@ Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a
 #### Arguments
 * `sheetName=nothing`: the sheet name from which to import data.
 * `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
-* `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,trc),(brr,brc))
+* `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
 * `retType="Matrix"`: the type of container returned. Either "Matrix", "Dict" or "DataFrame"
 
 #### Notes
@@ -79,20 +76,33 @@ julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
 ```
 
 
-## ODS writing (NOT YET IMPLEMENTED. SCHEDULED FOR FEB 2017):
-- dic2ods(dic, filename; topLefts=[])
-- df2ods(df, filename; topLefts=[])
+## ODS writing
 
-dic or df are respectively a list of dictionaries or DataFrames. Dic or df will be written to the ods sheets by names if the keys/headers are string, otherwise they will be written by position.
-topLefts (optional) are a list of touples defining the top-left corner to where to write the data. Default to (1,1) on each sheet.  
+### ods_write()
 
+    ods_write(filename,data)
 
-The following functions are provided by convenience:
-- dic2ods(dic, filename; topLeft=(1,1))
-- df2ods(df, filename; topLeft=(1,1))
+Write tabular data (2D Array, DataFrame or Dictionary) to OpenDocument spreadsheet format.
 
-Where dic and df are single dic/df. 
- 
+#### Arguments
+* `filename`:    an existing ods file or the one to create.
+* `data=Dict()`: a dictionary of locations in the files where to export the data => the actual data (see notes).
+
+#### Notes:
+* The locations where to save the data (the keys in the dictionary) are a tuple of tree elements:
+The first one is the sheet name or sheet position, the other two are the index of row and column of the top
+left corner where to export the data.
+If using sheet positions, these must be within current file sheets boundaries. If you want to create new sheets,
+use names.
+* The actual data exported are either a Matrix (2D Array), a DataFrame or an OrderedDict. In case of DataFrame or
+OrderedDict the headers ARE exported, so if you don't want them, first convert the DataFrame (or Dictionary)
+to a Matrix. In case of OrderedDict, the inner data must all have the same length.
+
+#### Examples
+```julia
+julia> ods_write("TestSpreadsheet.ods",Dict(("TestSheet",3,2)=>[[1,2,3,4,5] [6,7,8,9,10]]))
+```
+
 ## Testing
 
     odsio_test()
@@ -109,6 +119,6 @@ This package requires:
 
 ## Known limitations
 
-* As the data is saved in a dictionary, the order of the columns is not maintained.
-* It is relativelly slow with very large data.
-* If the data has many columns, the conversion from Dictionary to DataFrame made in the ods2dfs and ods2df functions may not work. In that case call the ods2dics or ods2dic functions and perfom the conversion manually choosing the columns you need.
+* In reading, as the data is saved in a dictionary, the order of the columns is not maintained.
+* It is relatively slow with very large data.
+* If the data has many columns, the conversion from Dictionary to DataFrame made in the ods2dfs and ods2df functions may not work. In that case call the ods2dics or ods2dic functions and perform the conversion manually choosing the columns you need.
