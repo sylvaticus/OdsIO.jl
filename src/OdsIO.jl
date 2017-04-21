@@ -37,6 +37,10 @@ Write tabular data (2D Array, DataFrame or Dictionary) to OpenDocument spreadshe
 * The actual data exported are either a Matrix (2D Array), a DataFrame or an OrderedDict. In case of DataFrame or
   OrderedDict the headers ARE exported, so if you don't want them, first convert the DataFrame (or Dictionary)
   to a Matrix. In case of OrderedDict, the inner data must all have the same length.
+* Some spreadsheet software may not automatically recalculate cells that depends on exported cells (e.g. we are exporting
+  some data o cell `A1` and cells `A2` depends on `A2`, the content of cell `A2` may not be updated after the export).
+  In such case most spreadsheet software have a command to force recalculation of cells (e.g. in LibreOffice/OpenOffice
+  use `CTRL+Shift+F9`)
 
 # Examples
 ```julia
