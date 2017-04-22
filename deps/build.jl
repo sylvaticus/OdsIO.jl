@@ -17,7 +17,7 @@ catch
 end
 
 @pyimport pip
-args = UTF8String[]
+args = String[]
 if haskey(ENV, "http_proxy")
     push!(args, "--proxy")
     push!(args, ENV["http_proxy"])
