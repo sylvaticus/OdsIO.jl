@@ -8,6 +8,7 @@ try
     @pyimport pip
 catch
     # If it is not found, install it
+    println("Pip not found. Downloading it.")
     get_pip = joinpath(dirname(@__FILE__), "get-pip.py")
     download("https://bootstrap.pypa.io/get-pip.py", get_pip)
     run(`$(PyCall.python) $get_pip --user`)
@@ -23,4 +24,5 @@ push!(args, "install")
 push!(args, "--user")
 append!(args, PACKAGES)
 
+println("Using pip to install required modules.")
 pip.main(args)
