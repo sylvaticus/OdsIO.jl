@@ -3,7 +3,8 @@ __precompile__()
 module OdsIO
 
 export ods_readall, ods_read, ods_write, odsio_test, odsio_autotest
-using PyCall, DataFrames, DataStructures
+using PyCall, DataFrames, DataStructures, BinDeps
+
 
 # This to allow precompilation
 # Unlike the @pyimport macro, this does not define a Julia module and members cannot be accessed with s.name.
@@ -11,6 +12,7 @@ using PyCall, DataFrames, DataStructures
 const  ezodf = PyNULL()
 
 function __init__()
+   #@BinDeps.load_dependencies
     try
         pyimport("ezodf")
     catch
