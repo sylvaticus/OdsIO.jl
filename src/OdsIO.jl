@@ -12,7 +12,7 @@ using PyCall, DataFrames, DataStructures, BinDeps
 const  ezodf = PyNULL()
 
 function __init__()
-   @BinDeps.load_dependencies
+   #@BinDeps.load_dependencies
     try
         pyimport("ezodf")
     catch
