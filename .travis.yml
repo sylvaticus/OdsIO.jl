@@ -2,18 +2,18 @@
 language: julia
 os:
   - linux
-#  - osx
+  - osx
 julia:
   - release
   - nightly
 notifications:
   email: false
 
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get -qq install python-pip
-  - sudo pip install ezodf
-  - sudo pip install lxml
+#before_install:
+#  - sudo apt-get -qq update
+#  - sudo apt-get -qq install python-pip
+#  - sudo pip install ezodf
+#  - sudo pip install lxml
 
 # uncomment the following lines to override the default test script
 #script:
