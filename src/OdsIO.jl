@@ -3,7 +3,7 @@ __precompile__()
 module OdsIO
 
 export ods_readall, ods_read, ods_write, odsio_test, odsio_autotest
-using PyCall, DataFrames, DataStructures, BinDeps
+using PyCall, DataFrames, DataStructures #, BinDeps
 
 
 # This to allow precompilation
