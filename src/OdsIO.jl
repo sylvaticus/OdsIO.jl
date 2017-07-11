@@ -84,7 +84,7 @@ function ods_write(filename::AbstractString, data::Any)
         end
         # Converting DataFrames and OrderedDicts to matrices..
         if isa(v, DataFrame)
-            v = vcat(names(v)',convert(Matrix{Any}, v))
+            v = vcat(reshape(names(v), 1, length(names(v))),convert(Matrix{Any}, v))
         elseif isa(v, OrderedDict)
             v = hcat([append!(Any[k],convert(Array{Any},v2))  for(k,v2) in v] ...)
         elseif isa(v, Array) && ndims(v) == 2
