@@ -193,6 +193,47 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     r_max::Int64     = min(ranges[sheetsCounter][2][1],sheet[:nrows]())
                     c_min::Int64     = ranges[sheetsCounter][1][2]
                     c_max::Int64     = min(ranges[sheetsCounter][2][2],sheet[:ncols]())
+                else
+                    # ezodf module include also empty final rows/cols in nrows()/ncols()
+                    # the following code adjust r_max and c_max as to exclude empty final rows/cols if
+                    # these have not been manually specified (i.e., no corrections if manually specified)
+                    
+                    # Checking empty final rows..
+                    emptyFinalRows = 0
+                    for i = r_max-1:-1:0
+                        row = sheet[:row](i)
+                        allEmpty = true
+                        for (j, cell) in enumerate(row)
+                            if cell[:value] != nothing
+                                allEmpty = false
+                                break
+                            end
+                        end
+                        if(!allEmpty)
+                            break
+                        else
+                            emptyFinalRows += 1
+                        end
+                    end
+                    r_max -= emptyFinalRows
+                    # Checking empty final cols..
+                    emptyFinalCols = 0
+                    for i = c_max-1:-1:0
+                        col = sheet[:column](i)
+                        allEmpty = true
+                        for (j, cell) in enumerate(col)
+                            if cell[:value] != nothing
+                                allEmpty = false
+                                break
+                            end
+                        end
+                        if(!allEmpty)
+                            break
+                        else
+                            emptyFinalCols += 1
+                        end
+                    end
+                    c_max -= emptyFinalCols
                 end
             catch
                 error("There is a problem with the range. Range should be defined as a list of pair of touples ((tlr,tlc),(brr,brc)) for each sheet to import, using integer positions." )
@@ -218,7 +259,16 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 elseif innerType == "Dict"
                     toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
-                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   DataFrame(Any[@view innerMatrix[2:end, i] for i::Int64 in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :])) : toReturn[is] = DataFrame(Any[@view innerMatrix[2:end, i] for i in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :]))
+                    df =  DataFrame(Any[@view innerMatrix[2:end, i] for i::Int64 in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :]))
+                    # converting nothing to NA before exporting the converted df
+                    for row in eachrow(df)
+                      for name in names(df)
+                        if row[name] == nothing
+                            row[name] = NA
+                        end
+                      end
+                    end
+                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   df : toReturn[is] = df
                 end # innerType is really a df
             else # end innerTpe is a Dict check
                 error("Only 'Matrix', 'Dict' or 'DataFrame' are supported as innerType/retType.'")
