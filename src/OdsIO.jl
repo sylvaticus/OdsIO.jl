@@ -197,7 +197,7 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     # ezodf module include also empty final rows/cols in nrows()/ncols()
                     # the following code adjust r_max and c_max as to exclude empty final rows/cols if
                     # these have not been manually specified (i.e., no corrections if manually specified)
-                    
+
                     # Checking empty final rows..
                     emptyFinalRows = 0
                     for i = r_max-1:-1:0
@@ -259,7 +259,7 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 elseif innerType == "Dict"
                     toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
-                    df =  DataFrame(Any[@view innerMatrix[2:end, i] for i::Int64 in 1:size(innerMatrix, 2)], Symbol.(innerMatrix[1, :]))
+                    df = convert(DataFrame,Dict(zip(innerMatrix[1,:],[innerMatrix[2:end,i] for i in 1:size(innerMatrix,2)])))
                     # converting nothing to NA before exporting the converted df
                     for row in eachrow(df)
                       for name in names(df)
