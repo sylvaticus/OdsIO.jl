@@ -259,7 +259,10 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 elseif innerType == "Dict"
                     toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
-                    df = convert(DataFrame,Dict(zip(innerMatrix[1,:],[innerMatrix[2:end,i] for i in 1:size(innerMatrix,2)])))
+                    h    = [Symbol(c) for c in innerMatrix[1,:]]
+                    vals = innerMatrix[2:end, :]
+                    df = convert(DataFrame,OrderedDict(zip(h,[vals[:,i] for i in 1:size(vals,2)])))
+                    #df = convert(DataFrame,Dict(zip(innerMatrix[1,:],[innerMatrix[2:end,i] for i in 1:size(innerMatrix,2)])))
                     # converting nothing to NA before exporting the converted df
                     for row in eachrow(df)
                       for name in names(df)
