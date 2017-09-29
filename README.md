@@ -34,7 +34,7 @@ Return a dictionary of tables|dictionaries|dataframes indexed by position or nam
 * ranges is defined using integer positions for both rows and columns
 * individual dictionaries or dataframes are keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
 * innerType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
-* using innerType="DataFrame" also preserves original column order
+* using innerType="DataFrame" also preserves original column order and try to auto-convert column types (working for Int64, Float64, String, in that order)
 
 #### Examples
 ```julia
@@ -62,7 +62,7 @@ Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a
 * ranges is defined using integer positions for both rows and columns
 * the dictionary or dataframe is keyed by the values of the cells in the first row specified in the range, or first row if `range` is not given
 * retType="Matrix", differently from innerType="Dict", preserves original column order, it is faster and require less memory
-* using retType="DataFrame" also preserves original column order
+* using innerType="DataFrame" also preserves original column order and try to auto-convert column types (working for Int64, Float64, String, in that order)
 
 #### Examples
 ```julia
