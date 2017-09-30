@@ -259,19 +259,7 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 elseif innerType == "Dict"
                     toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
-                    h    = [Symbol(c) for c in innerMatrix[1,:]]
-                    vals = innerMatrix[2:end, :]
-                    df = convert(DataFrame,OrderedDict(zip(h,[vals[:,i] for i in 1:size(vals,2)])))
-                    #df = convert(DataFrame,Dict(zip(innerMatrix[1,:],[innerMatrix[2:end,i] for i in 1:size(innerMatrix,2)])))
-                    # converting nothing to NA before exporting the converted df
-                    for row in eachrow(df)
-                      for name in names(df)
-                        if row[name] == nothing
-                            row[name] = NA
-                        end
-                      end
-                    end
-                    convertDf!(df)
+                    df = toDf(innerMatrix)
                     toReturnKeyType == "name"? toReturn[sheet[:name]] =   df : toReturn[is] = df
                 end # innerType is really a df
             else # end innerTpe is a Dict check
@@ -361,28 +349,16 @@ function odsio_autotest()
   return 1
 end
 
-"""
-    convertDf!(df)
-
-Try to convert each columnt of the importing df from Any to In64, Float64 or String (in that order).
-
-That should be enough for most uses..
 
 """
-function convertDf!(df)
-    for c in names(df)
-        try
-          df[c] = convert(DataArrays.DataArray{Int64,1},df[c])
-        catch
-            try
-              df[c] = convert(DataArrays.DataArray{Float64,1},df[c])
-            catch
-                try
-                  df[c] = convert(DataArrays.DataArray{String,1},df[c])
-                catch
-                end
-            end
-        end
-    end
+    toDf!(m)
+
+Convert a mixed-type Matrix to DataFrame using DataFrames.inlinetable()
+"""
+function toDf(m)
+    s = join([join([(m[i,j]==nothing?NA:m[i,j]) for j in indices(m, 2)], '\t') for i in indices(m, 1)], '\n')
+    df = DataFrames.inlinetable(s; separator='\t', header=true)
+    return df
 end
+
 end # module OdsIO
