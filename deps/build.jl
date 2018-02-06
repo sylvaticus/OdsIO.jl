@@ -3,7 +3,7 @@ using PyCall
 println("Running build.jl for the OdsIO package.")
 
 # Change that to whatever packages you need.
-const PACKAGES = ["ezodf", "lxml"]
+const PACKAGES = ["ezodf"]
 
 # Use eventual proxy info
 proxy_arg=String[]

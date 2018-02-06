@@ -356,7 +356,7 @@ end
 Convert a mixed-type Matrix to DataFrame using DataFrames.inlinetable()
 """
 function toDf(m)
-    s = join([join([(m[i,j]==nothing?NA:m[i,j]) for j in indices(m, 2)], '\t') for i in indices(m, 1)], '\n')
+    s = join([join([(m[i,j]==nothing?missing:m[i,j]) for j in indices(m, 2)], '\t') for i in indices(m, 1)], '\n')
     df = DataFrames.inlinetable(s; separator='\t', header=true)
     return df
 end
