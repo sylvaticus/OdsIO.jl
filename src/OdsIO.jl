@@ -2,7 +2,7 @@ __precompile__()
 
 module OdsIO
 
-export ods_readall, ods_read, ods_write, odsio_test, odsio_autotest
+export ods_readall, ods_read, ods_write, odsio_test, odsio_autotest, toDf!, toDf
 using PyCall, DataFrames, DataStructures #, BinDeps
 
 
@@ -259,7 +259,7 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 elseif innerType == "Dict"
                     toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
-                    df = toDf(innerMatrix)
+                    df = toDf!(innerMatrix)
                     toReturnKeyType == "name"? toReturn[sheet[:name]] =   df : toReturn[is] = df
                 end # innerType is really a df
             else # end innerTpe is a Dict check
@@ -353,12 +353,22 @@ end
 """
     toDf!(m)
 
-Convert a mixed-type Matrix to DataFrame using DataFrames.inlinetable()
+Convert a mixed-type Matrix to DataFrame
+"""
+function toDf!(m)
+    [m[i,j]==nothing?m[i,j]=missing:m[i,j] for i in 2:size(m)[1], j in 1:size(m)[2]]
+    return DataFrame([[m[2:end,i]...] for i in 1:size(m,2)], Symbol.(m[1,:]))
+end
+
+"""
+    toDf(m)
+
+Convert a mixed-type Matrix to DataFrame
 """
 function toDf(m)
-    s = join([join([(m[i,j]==nothing?missing:m[i,j]) for j in indices(m, 2)], '\t') for i in indices(m, 1)], '\n')
-    df = DataFrames.inlinetable(s; separator='\t', header=true)
-    return df
+    m2 = [m[i,j]==nothing?missing:m[i,j] for i in 1:size(m)[1], j in 1:size(m)[2]]
+    return DataFrame([[m2[2:end,i]...] for i in 1:size(m2,2)], Symbol.(m2[1,:]))
 end
+
 
 end # module OdsIO
