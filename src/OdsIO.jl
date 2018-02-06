@@ -3,7 +3,7 @@ __precompile__()
 module OdsIO
 
 export ods_readall, ods_read, ods_write, odsio_test, odsio_autotest, toDf!, toDf
-using PyCall, DataFrames, DataStructures #, BinDeps
+using PyCall, DataFrames, DataStructures, Missings #, BinDeps
 
 
 # This to allow precompilation
@@ -121,6 +121,9 @@ function ods_write(filename::AbstractString, data::Any)
             r2 = k[2]+r-1
             for c in range(1,size(v)[2])
                 c2 = k[3] + c -1
+                if ismissing(v[r,c]) || v[r,c]==nothing
+                  v[r,c] = ""
+                end
                 sheet[r2,c2][:set_value](v[r,c])
             end
         end
