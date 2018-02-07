@@ -320,34 +320,6 @@ function ods_read(filename::AbstractString; sheetName=nothing, sheetPos=nothing,
     end
 end
 
-
-"""
-    odsio_test()
-
-Provide a test to check that both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed.
-
-"""
-function odsio_test()
-    #try
-    #  @pyimport ezodf
-    #catch
-    #  error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
-    #end
-    testData = [[1,2,3,4,5] [6,7,8,9,10]]
-    filename = "testspreadheet"
-    ods_write(filename,Dict(("TestSheet",3,2)=>testData))
-    testDataOut = ods_read(filename;sheetName="TestSheet",range=((3,2),(7,3)))
-    rm(filename)
-    if( convert(Array{Any,2}, testData) == testDataOut)
-        println("Congratulations, both the Julia 'OdsIO' and Python 'ezodf' modules are correctly installed, you can start using them !")
-        return true
-    else
-        println("Something didn't go well. It could also be non writable filesystem.")
-        return false
-    end
-end
-
-
 """
     odsio_autotest()
 
