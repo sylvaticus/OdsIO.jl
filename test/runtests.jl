@@ -21,8 +21,32 @@ filename = "testspreadsheet"
 ods_write(filename,Dict(("TestSheetDf",1,1)=>dfIn))
 dfOut = ods_read(filename; sheetName="TestSheetDf", retType="DataFrame")
 rm(filename)
-#@test dfIn == dfOut
 
+# @test dfIn == dfOut #would not pass because dataframe report the equal test as "missing" not as "true" because of the propagation of missing values
+# I need to check each single column time and value
+# ismissing(dfIn == dfOut) report true even when columns are differern types
+
+# Checking size
+@test (size(dfIn) == size(dfOut))
+# Checking col name and types
+typesCheck = [typeof(dfIn[i]) == typeof(dfOut[i]) for i in 1:size(dfIn)[2] ]
+@test minimum(typesCheck)
+@test names(dfIn) == names(dfOut)
+# Checking actual values
+areequals = true
+for i in 1:size(dfIn)[1]
+    for j in 1:size(dfIn)[2]
+        if (ismissing(dfIn[i,j]) && ismissing(dfOut[i,j]))
+        elseif (ismissing(dfIn[i,j]) && ! ismissing(dfOut[i,j]))
+            areequals = false
+        elseif (! ismissing(dfIn[i,j]) && ismissing(dfOut[i,j]))
+            areequals = false
+        elseif (dfIn[i,j] != dfOut[i,j])
+               areequals = false
+        end
+    end
+end
+@test areequals
 
 # Test 3: Fake test, this should not pass
 # @test 1 == 2

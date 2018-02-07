@@ -123,7 +123,7 @@ function ods_write(filename::AbstractString, data::Any)
                 c2 = k[3] + c -1
                 if ismissing(v[r,c]) || v[r,c]==nothing
                   emptyCell = ezodf[:Cell]()
-                  sheet[r2,c2] = emptyCell 
+                  sheet[r2,c2] = emptyCell
                 else
                    sheet[r2,c2][:set_value](v[r,c])
                 end
@@ -250,9 +250,13 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     if (i>=r_min && i <= r_max) # data row
                         c::Int64=1
                         for (j::Int64, cell) in enumerate(row)
-
                             if (j>=c_min && j<=c_max)
-                                innerMatrix[[r],[c]]=cell[:value]
+                                # Try saving the value as integer if that's actually possible
+                                try
+                                    innerMatrix[[r],[c]] = convert(Int64,cell[:value])
+                                catch
+                                    innerMatrix[[r],[c]]=cell[:value]
+                                end
                                 c = c+1
                             end
                         end
