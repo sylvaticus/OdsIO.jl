@@ -122,9 +122,11 @@ function ods_write(filename::AbstractString, data::Any)
             for c in range(1,size(v)[2])
                 c2 = k[3] + c -1
                 if ismissing(v[r,c]) || v[r,c]==nothing
-                  v[r,c] = ""
+                  emptyCell = ezodf[:Cell]()
+                  sheet[r2,c2] = emptyCell 
+                else
+                   sheet[r2,c2][:set_value](v[r,c])
                 end
-                sheet[r2,c2][:set_value](v[r,c])
             end
         end
     end # end for each (k,v) in data
