@@ -252,11 +252,15 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                         for (j::Int64, cell) in enumerate(row)
                             if (j>=c_min && j<=c_max)
                                 # Try saving the value as integer if that's actually possible
-                                try
-                                    innerMatrix[[r],[c]] = convert(Int64,cell[:value])
-                                catch
+                                if typeof(cell[:value]) <: Number
+                                    if isinteger(cell[:value])
+                                        innerMatrix[[r],[c]] = convert(Int64,cell[:value])
+                                    else
+                                        innerMatrix[[r],[c]]=cell[:value]
+                                    end
+                                else
                                     innerMatrix[[r],[c]]=cell[:value]
-                                end
+                                end 
                                 c = c+1
                             end
                         end
