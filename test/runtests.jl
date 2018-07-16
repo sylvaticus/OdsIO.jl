@@ -1,5 +1,5 @@
 using OdsIO, DataFrames
-using Base.Test
+using Test
 
 # TEST 1: Just that everything is installed
 @test 1 == odsio_autotest()
@@ -33,16 +33,16 @@ typesCheck = [typeof(dfIn[i]) == typeof(dfOut[i]) for i in 1:size(dfIn)[2] ]
 @test minimum(typesCheck)
 @test names(dfIn) == names(dfOut)
 # Checking actual values
-areequals = true
+global areequals = true
 for i in 1:size(dfIn)[1]
     for j in 1:size(dfIn)[2]
         if (ismissing(dfIn[i,j]) && ismissing(dfOut[i,j]))
         elseif (ismissing(dfIn[i,j]) && ! ismissing(dfOut[i,j]))
-            areequals = false
+            global areequals = false
         elseif (! ismissing(dfIn[i,j]) && ismissing(dfOut[i,j]))
-            areequals = false
+            global areequals = false
         elseif (dfIn[i,j] != dfOut[i,j])
-               areequals = false
+            global areequals = false
         end
     end
 end

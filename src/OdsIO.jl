@@ -2,7 +2,7 @@ __precompile__()
 
 module OdsIO
 
-export ods_readall, ods_read, ods_write, odsio_test, odsio_autotest, toDf!, toDf
+export ods_readall, ods_read, ods_write, odsio_autotest, toDf!, toDf
 using PyCall, DataFrames, DataStructures, Missings #, BinDeps
 
 
@@ -117,9 +117,9 @@ function ods_write(filename::AbstractString, data::Any)
             sheet[:append_columns](max(0,sCSize-sheet[:ncols]())) ## adding empty rows to suit the new data
         end
 
-        for r in range(1,size(v)[1])
+        for r in range(1, length=size(v)[1])
             r2 = k[2]+r-1
-            for c in range(1,size(v)[2])
+            for c in range(1, length=size(v)[2])
                 c2 = k[3] + c -1
                 if ismissing(v[r,c]) || v[r,c]==nothing
                   emptyCell = ezodf[:Cell]()
@@ -244,7 +244,7 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                 error("There is a problem with the range. Range should be defined as a list of pair of touples ((tlr,tlc),(brr,brc)) for each sheet to import, using integer positions." )
             end
             if (innerType=="Matrix" || innerType=="Dict" || innerType=="DataFrame" )
-                innerMatrix = Array{Any,2}(r_max-r_min+1,c_max-c_min+1)
+                innerMatrix = Array{Any,2}(undef,r_max-r_min+1,c_max-c_min+1)
                 r::Int64=1
                 for (i::Int64, row) in enumerate(sheet[:rows]())
                     if (i>=r_min && i <= r_max) # data row
@@ -254,13 +254,13 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                                 # Try saving the value as integer if that's actually possible
                                 if typeof(cell[:value]) <: Number
                                     if isinteger(cell[:value])
-                                        innerMatrix[[r],[c]] = convert(Int64,cell[:value])
+                                        innerMatrix[[r],[c]] .= convert(Int64,cell[:value])
                                     else
-                                        innerMatrix[[r],[c]]=cell[:value]
+                                        innerMatrix[[r],[c]] .= cell[:value]
                                     end
                                 else
-                                    innerMatrix[[r],[c]]=cell[:value]
-                                end 
+                                    innerMatrix[[r],[c]] .= cell[:value]
+                                end
                                 c = c+1
                             end
                         end
@@ -268,12 +268,12 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     end
                 end
                 if innerType=="Matrix"
-                    toReturnKeyType == "name"? toReturn[sheet[:name]] = innerMatrix : toReturn[is] = innerMatrix
+                    toReturnKeyType == "name" ? toReturn[sheet[:name]] = innerMatrix : toReturn[is] = innerMatrix
                 elseif innerType == "Dict"
-                    toReturnKeyType == "name"? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
+                    toReturnKeyType == "name" ? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
                     df = toDf!(innerMatrix)
-                    toReturnKeyType == "name"? toReturn[sheet[:name]] =   df : toReturn[is] = df
+                    toReturnKeyType == "name" ? toReturn[sheet[:name]] =   df : toReturn[is] = df
                 end # innerType is really a df
             else # end innerTpe is a Dict check
                 error("Only 'Matrix', 'Dict' or 'DataFrame' are supported as innerType/retType.'")
@@ -315,9 +315,9 @@ julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
 ```
 """
 function ods_read(filename::AbstractString; sheetName=nothing, sheetPos=nothing, range=nothing, retType::AbstractString="Matrix")
-    sheetsNames_h = (sheetName == nothing ? []: [sheetName])
-    sheetsPos_h = (sheetPos == nothing ? []: [sheetPos])
-    ranges_h = (range == nothing ? []: [range])
+    sheetsNames_h = (sheetName == nothing ? [] : [sheetName])
+    sheetsPos_h = (sheetPos == nothing ? [] : [sheetPos])
+    ranges_h = (range == nothing ? [] : [range])
     dict = ods_readall(filename;sheetsNames=sheetsNames_h,sheetsPos=sheetsPos_h,ranges=ranges_h,innerType=retType)
     for (k,v) in dict
        return v # only one value should be present
@@ -341,7 +341,7 @@ end
 Convert a mixed-type Matrix to DataFrame
 """
 function toDf!(m)
-    [m[i,j]==nothing?m[i,j]=missing:m[i,j] for i in 2:size(m)[1], j in 1:size(m)[2]]
+    [m[i,j]==nothing ? m[i,j]=missing : m[i,j] for i in 2:size(m)[1], j in 1:size(m)[2]]
     return DataFrame([[m[2:end,i]...] for i in 1:size(m,2)], Symbol.(m[1,:]))
 end
 
@@ -351,7 +351,7 @@ end
 Convert a mixed-type Matrix to DataFrame
 """
 function toDf(m)
-    m2 = [m[i,j]==nothing?missing:m[i,j] for i in 1:size(m)[1], j in 1:size(m)[2]]
+    m2 = [m[i,j]==nothing ? missing : m[i,j] for i in 1:size(m)[1], j in 1:size(m)[2]]
     return DataFrame([[m2[2:end,i]...] for i in 1:size(m2,2)], Symbol.(m2[1,:]))
 end
 
