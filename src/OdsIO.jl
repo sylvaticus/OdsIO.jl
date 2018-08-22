@@ -1,5 +1,3 @@
-__precompile__()
-
 module OdsIO
 
 export ods_readall, ods_read, ods_write, odsio_autotest, toDf!, toDf
