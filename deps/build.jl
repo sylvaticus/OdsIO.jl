@@ -14,7 +14,7 @@ end
 
 # Import pip
 try
-    @pyimport pip
+    pyimport("pip")
 catch
     # If it is not found, install it
     println("Pip not found on your sytstem. Downloading it.")
