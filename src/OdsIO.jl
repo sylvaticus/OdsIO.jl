@@ -173,12 +173,12 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
     #@pyimport ezodf
     toReturn = Dict() # The outer container is always a dictionary
     try
-      global doc = ezodf[:opendoc](filename)
+      global doc = ezodf.opendoc(filename)
     catch
       error("I can not open for reading file $filename at $(pwd())")
     end
 
-    nsheets = length(doc[:sheets])
+    nsheets = length(doc.sheets)
     toReturnKeyType = "name"
     if !isempty(sheetsNames) && !isempty(sheetsPos)
         error("Do not use sheetNames and sheetPos together")
@@ -188,19 +188,19 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
     end
     sheetsCounter=0
 
-    for (is, sheet) in enumerate(doc[:sheets])
-        if is in sheetsPos || sheet[:name] in sheetsNames || (isempty(sheetsNames) && isempty(sheetsPos))
+    for (is, sheet) in enumerate(doc.sheets)
+        if is in sheetsPos || sheet.name in sheetsNames || (isempty(sheetsNames) && isempty(sheetsPos))
             sheetsCounter += 1
             r_min = 1
-            r_max = sheet[:nrows]()
+            r_max = sheet.nrows()
             c_min = 1
-            c_max = sheet[:ncols]()
+            c_max = sheet.ncols()
             try
                 if !isempty(ranges) && !isempty(ranges[sheetsCounter])
                     r_min::Int64     = ranges[sheetsCounter][1][1]
-                    r_max::Int64     = min(ranges[sheetsCounter][2][1],sheet[:nrows]())
+                    r_max::Int64     = min(ranges[sheetsCounter][2][1],sheet.nrows())
                     c_min::Int64     = ranges[sheetsCounter][1][2]
-                    c_max::Int64     = min(ranges[sheetsCounter][2][2],sheet[:ncols]())
+                    c_max::Int64     = min(ranges[sheetsCounter][2][2],sheet.ncols())
                 else
                     # ezodf module include also empty final rows/cols in nrows()/ncols()
                     # the following code adjust r_max and c_max as to exclude empty final rows/cols if
@@ -209,10 +209,10 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     # Checking empty final rows..
                     emptyFinalRows = 0
                     for i = r_max-1:-1:0
-                        row = sheet[:row](i)
+                        row = sheet.row(i)
                         allEmpty = true
                         for (j, cell) in enumerate(row)
-                            if cell[:value] != nothing
+                            if cell.value != nothing
                                 allEmpty = false
                                 break
                             end
@@ -227,10 +227,10 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     # Checking empty final cols..
                     emptyFinalCols = 0
                     for i = c_max-1:-1:0
-                        col = sheet[:column](i)
+                        col = sheet.column(i)
                         allEmpty = true
                         for (j, cell) in enumerate(col)
-                            if cell[:value] != nothing
+                            if cell.value != nothing
                                 allEmpty = false
                                 break
                             end
@@ -249,20 +249,20 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
             if (innerType=="Matrix" || innerType=="Dict" || innerType=="DataFrame" )
                 innerMatrix = Array{Any,2}(undef,r_max-r_min+1,c_max-c_min+1)
                 r::Int64=1
-                for (i::Int64, row) in enumerate(sheet[:rows]())
+                for (i::Int64, row) in enumerate(sheet.rows())
                     if (i>=r_min && i <= r_max) # data row
                         c::Int64=1
                         for (j::Int64, cell) in enumerate(row)
                             if (j>=c_min && j<=c_max)
                                 # Try saving the value as integer if that's actually possible
-                                if typeof(cell[:value]) <: Number
-                                    if isinteger(cell[:value])
-                                        innerMatrix[[r],[c]] .= convert(Int64,cell[:value])
+                                if typeof(cell.value) <: Number
+                                    if isinteger(cell.value)
+                                        innerMatrix[[r],[c]] .= convert(Int64,cell.value)
                                     else
-                                        innerMatrix[[r],[c]] .= cell[:value]
+                                        innerMatrix[[r],[c]] .= cell.value
                                     end
                                 else
-                                    innerMatrix[[r],[c]] .= cell[:value]
+                                    innerMatrix[[r],[c]] .= cell.value
                                 end
                                 c = c+1
                             end
@@ -271,12 +271,12 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
                     end
                 end
                 if innerType=="Matrix"
-                    toReturnKeyType == "name" ? toReturn[sheet[:name]] = innerMatrix : toReturn[is] = innerMatrix
+                    toReturnKeyType == "name" ? toReturn[sheet.name] = innerMatrix : toReturn[is] = innerMatrix
                 elseif innerType == "Dict"
-                    toReturnKeyType == "name" ? toReturn[sheet[:name]] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
+                    toReturnKeyType == "name" ? toReturn[sheet.name] = Dict([(ch,innerMatrix[2:end,cix]) for (cix::Int64,ch) in enumerate(innerMatrix[1,:])]) : toReturn[is] = Dict([(ch,innerMatrix[2:end,cix]) for (cix,ch) in enumerate(innerMatrix[1,:])])
                 elseif innerType == "DataFrame"
                     df = toDf!(innerMatrix)
-                    toReturnKeyType == "name" ? toReturn[sheet[:name]] =   df : toReturn[is] = df
+                    toReturnKeyType == "name" ? toReturn[sheet.name] =   df : toReturn[is] = df
                 end # innerType is really a df
             else # end innerTpe is a Dict check
                 error("Only 'Matrix', 'Dict' or 'DataFrame' are supported as innerType/retType.'")
