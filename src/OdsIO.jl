@@ -97,7 +97,8 @@ function ods_write(filename::AbstractString, data::Any)
             if k[1] > nSheetsOrig
                 error("You specified a sheet position that is bigger than the number of sheet in the destination ods file. Use sheet names to add a new sheet.")
             end
-            sheet = destDoc.sheets[k[1]]
+            #sheet = destDoc.sheets[k[1]]
+            sheet = get(destDoc.sheets,k[1]-1) # new Pycall 1.9 1-based index
         else
             try
                 sheet = destDoc.sheets.__getitem__(k[1])
@@ -120,16 +121,20 @@ function ods_write(filename::AbstractString, data::Any)
             for c in range(1, length=size(v)[2])
                 c2 = k[3] + c -1
                 if ismissing(v[r,c]) || v[r,c]==nothing
-                  emptyCell = ezodf[:Cell]()
-                  sheet[r2,c2] = emptyCell
+                  emptyCell = ezodf.Cell()
+                  dcell = get(sheet,(r2-1,c2-1)) # Pycall 1.9 update (moving from 0 based to 1 based)
+                  dcell = emptyCell
+                  #sheet[r2,c2] = emptyCell
                 else
-                   sheet[r2,c2][:set_value](v[r,c])
+                   dcell = get(sheet,(r2-1,c2-1)) # Pycall 1.9 update (moving from 0 based to 1 based)
+                   dcell.set_value(v[r,c])
+                   #sheet[r2,c2].set_value(v[r,c])
                 end
             end
         end
     end # end for each (k,v) in data
-    destDoc[:backup] = false
-    destDoc[:save]()
+    destDoc.backup = false
+    destDoc.save()
 end
 
 """
