@@ -56,16 +56,16 @@ function ods_write(filename::AbstractString, data::Any)
     #@pyimport ezodf
     nSheetsOrig = 0
     if isfile(filename)
-        doc = ezodf[:opendoc](filename)
-        if doc[:doctype] == "ods"
+        doc = ezodf.opendoc(filename)
+        if doc.doctype == "ods"
             destDoc = doc
-            nSheetsOrig = length(doc[:sheets])
+            nSheetsOrig = length(doc.sheets)
         else
             error("Trying to write to existing file $filename , but it is not an Opendocument spreadsheet.")
         end
     else
         # new document
-        destDoc = ezodf[:newdoc](doctype="ods", filename=filename)
+        destDoc = ezodf.newdoc(doctype="ods", filename=filename)
     end
 
     # Checking data is a dictionary
@@ -91,28 +91,28 @@ function ods_write(filename::AbstractString, data::Any)
             error("Data is of unknow type. Only 2D Arrays (Matrices), dataframes and ordered dictionaries are supported.")
         end
         sRSize = k[2] + size(v)[1] -1; sCSize = k[3] + size(v)[2] -1;
-        sheet = ezodf[:Table]()
+        sheet = ezodf.Table()
         newsheet = false
         if isa(k[1],Int)
             if k[1] > nSheetsOrig
                 error("You specified a sheet position that is bigger than the number of sheet in the destination ods file. Use sheet names to add a new sheet.")
             end
-            sheet = destDoc[:sheets][k[1]]
+            sheet = destDoc.sheets[k[1]]
         else
             try
-                sheet = destDoc[:sheets][:__getitem__](k[1])
+                sheet = destDoc.sheets.__getitem__(k[1])
             catch
                 # this is a new sheet
-                sheet = ezodf[:Sheet](k[1], size=(sRSize, sCSize))
-                destDoc[:sheets][:__iadd__](sheet)
+                sheet = ezodf.Sheet(k[1], size=(sRSize, sCSize))
+                destDoc.sheets.__iadd__(sheet)
             end
         end
         # adding empty rows/cols to fit with the new data
-        if sheet[:nrows]()<sRSize
-            sheet[:append_rows](max(0,sRSize-sheet[:nrows]()))
+        if sheet.nrows()<sRSize
+            sheet.append_rows(max(0,sRSize-sheet.nrows()))
         end
-        if sheet[:ncols]()<sCSize
-            sheet[:append_columns](max(0,sCSize-sheet[:ncols]())) ## adding empty rows to suit the new data
+        if sheet.ncols()<sCSize
+            sheet.append_columns(max(0,sCSize-sheet.ncols())) ## adding empty rows to suit the new data
         end
 
         for r in range(1, length=size(v)[1])
