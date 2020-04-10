@@ -69,7 +69,7 @@ function ods_write(filename::AbstractString, data::Any)
     end
 
     # Checking data is a dictionary
-    if ! isa(data,Dict)
+    if ! isa(data,AbstractDict)
         error("The data parameter must be a dictionary of location_where_to_export_the_data -> exported_data. Type `?ods_write` for more informations.")
     end
     # Looping over each item to be exported
