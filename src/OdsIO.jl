@@ -1,7 +1,7 @@
 module OdsIO
 
 export ods_readall, ods_read, ods_write, odsio_autotest, toDf!, toDf
-using PyCall, DataFrames, DataStructures, Missings #, BinDeps
+using PyCall, DataFrames, DataStructures#, Missings #, BinDeps
 
 
 # This to allow precompilation

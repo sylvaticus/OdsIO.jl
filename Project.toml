@@ -1,0 +1,23 @@
+name = "OdsIO"
+uuid = "56b0d19f-0a74-5872-92bc-f48f9c5431d4"
+authors = ["Antonello Lobianco <antonello@lobianco.org>"]
+version = "0.6.0"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+#Missings = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+
+[compat]
+DataFrames = "≥ 0.11.3"
+DataStructures = "≥ 0.7.4"
+#Missings = "≥ 0.2.10"
+PyCall = "≥ 1.9.0"
+julia = "≥ 0.7.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
