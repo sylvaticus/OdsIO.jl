@@ -29,7 +29,7 @@ rm(filename)
 # Checking size
 @test (size(dfIn) == size(dfOut))
 # Checking col name and types
-typesCheck = [typeof(dfIn[i]) == typeof(dfOut[i]) for i in 1:size(dfIn)[2] ]
+typesCheck = [typeof(dfIn[!,i]) == typeof(dfOut[!,i]) for i in 1:size(dfIn)[2] ]
 @test minimum(typesCheck)
 @test names(dfIn) == names(dfOut)
 # Checking actual values
