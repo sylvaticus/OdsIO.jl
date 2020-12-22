@@ -7,6 +7,7 @@ It allows to export (import) data from (to) Julia to (from) LibreOffice, OpenOff
 [![Build Status](https://travis-ci.org/sylvaticus/OdsIO.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/OdsIO.jl)
 [![codecov.io](http://codecov.io/github/sylvaticus/OdsIO.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/OdsIO.jl?branch=master)
 
+
 ## Installation
 `Pkg.add("OdsIO")`
 
