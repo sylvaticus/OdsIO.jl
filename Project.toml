@@ -1,7 +1,7 @@
 name = "OdsIO"
 uuid = "56b0d19f-0a74-5872-92bc-f48f9c5431d4"
 authors = ["Antonello Lobianco <antonello@lobianco.org>"]
-version = "0.6.0"
+version = "0.6.1"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
