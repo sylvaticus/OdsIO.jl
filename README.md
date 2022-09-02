@@ -17,11 +17,12 @@ This package provides the following functions:
 
 ### ods_readall()
 
-    ods_readall(filename; <keyword arguments>)
+    ods_readall(filename_or_stream; <keyword arguments>)
 
-Return a dictionary of tables|dictionaries|dataframes indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
+Return a dictionary of tables|dictionaries|dataframes indexed by position or name in the original OpenDocument Spreadsheet (.ods) file or stream.
 
 #### Arguments
+* `fileaname_or_stream`: file name or stream as `Vector{UInt8}`
 * `sheetsNames=[]`: the list of sheet names from which to import data.
 * `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
 * `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
@@ -36,19 +37,25 @@ Return a dictionary of tables|dictionaries|dataframes indexed by position or nam
 
 #### Examples
 ```julia
-julia> outDic  = ods2dics("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))], innerType="Dict")
+julia> outDic  = ods_readall("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3,3)),((2,2),(6,4))], innerType="Dict")
 Dict{Any,Any} with 2 entries:
   3 => Dict{Any,Any}(Pair{Any,Any}("c",Any[33.0,43.0,53.0,63.0]),Pair{Any,Any}("b",Any[32.0,42.0,52.0,62.0]),Pair{Any,Any}("d",Any[34.0,44.0,54.…
   1 => Dict{Any,Any}(Pair{Any,Any}("c",Any[23.0,33.0]),Pair{Any,Any}("b",Any[22.0,32.0]),Pair{Any,Any}("a",Any[21.0,31.0]))
+julia> data = @pipe HTTP.get("https://github.com/sylvaticus/OdsIO.jl/raw/master/test/spreadsheet.ods").body |> ods_readall(_)
+Dict{Any, Any} with 3 entries:
+  "Sheet1" => Any["h1" "h2" "h3"; "a" "b" "c"; "aa" "bb" "cc"]
+  "Sheet2" => Any["a" "b" "c"; 21 22 23; 31 32 33]
+  "Sheet3" => Any[nothing nothing nothing nothing; nothing "b" "c" "d"; … ; nothing 52 53 54; nothing 62 63 64]
 ```
 
 ### ods_read()
 
-    ods_read(filename; <keyword arguments>)
+    ods_read(filename_or_stream; <keyword arguments>)
 
-Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
+Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file or stream.
 
 #### Arguments
+* `fileaname_or_stream`: file name or stream as `Vector{UInt8}`
 * `sheetName=nothing`: the sheet name from which to import data.
 * `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
 * `ranges=[]`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
@@ -71,6 +78,11 @@ julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
 │ 1   │ "a"  │ "b"  │ "c"  │
 │ 2   │ 21.0 │ 22.0 │ 23.0 │
 │ 3   │ 31.0 │ 32.0 │ 33.0 │
+julia> data = @pipe HTTP.get("https://github.com/sylvaticus/OdsIO.jl/raw/master/test/spreadsheet.ods").body |> ods_read(_)
+3×3 Matrix{Any}:
+ "h1"  "h2"  "h3"
+ "a"   "b"   "c"
+ "aa"  "bb"  "cc"
 ```
 
 

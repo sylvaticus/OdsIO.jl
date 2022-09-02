@@ -305,7 +305,7 @@ end # end functionSS
 """
     ods_read(filename_or_stream; <keyword arguments>)
 
-Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file (or stream)..
+Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file or stream.
 
 # Arguments
 * `fileaname_or_stream`: file name or stream as `Vector{UInt8}`
@@ -331,6 +331,11 @@ julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
 │ 1   │ "a"  │ "b"  │ "c"  │
 │ 2   │ 21.0 │ 22.0 │ 23.0 │
 │ 3   │ 31.0 │ 32.0 │ 33.0 │
+julia> data = @pipe HTTP.get("https://github.com/sylvaticus/OdsIO.jl/raw/master/test/spreadsheet.ods").body |> ods_read(_)
+3×3 Matrix{Any}:
+ "h1"  "h2"  "h3"
+ "a"   "b"   "c"
+ "aa"  "bb"  "cc"
 ```
 """
 function ods_read(filename_or_stream; sheetName=nothing, sheetPos=nothing, range=nothing, retType::AbstractString="Matrix")
