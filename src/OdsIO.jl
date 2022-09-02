@@ -8,6 +8,7 @@ using PyCall, DataFrames, DataStructures#, Missings #, BinDeps
 # Unlike the @pyimport macro, this does not define a Julia module and members cannot be accessed with s.name.
 # @see https://github.com/JuliaPy/PyCall.jl/issues/328
 const  ezodf = PyNULL()
+const  pyio  = PyNULL()
 
 function __init__()
    #@BinDeps.load_dependencies
@@ -17,6 +18,7 @@ function __init__()
         error("The OdsIO module is correctly installed, but your python installation is missing the 'ezodf' module.")
     end
     copy!(ezodf, pyimport("ezodf"))
+    copy!(pyio, pyimport("io"))
 end
 
 """
@@ -135,11 +137,12 @@ function ods_write(filename::AbstractString, data::Any)
 end
 
 """
-    ods_readall(filename; <keyword arguments>)
+    ods_readall(filename_or_stream; <keyword arguments>)
 
-Return a dictionary of tables|dictionaries|dataframes indexed by position or name in the original OpenDocument Spreadsheet (.ods) file.
+Return a dictionary of tables|dictionaries|dataframes indexed by position or name in the original OpenDocument Spreadsheet (.ods) file or stream.
 
 # Arguments
+* `fileaname_or_stream`: file name or stream as `Vector{UInt8}`
 * `sheetsNames=[]`: the list of sheet names from which to import data.
 * `sheetsPos=[]`: the list of sheet positions (starting from 1) from which to import data.
 * `ranges=[]`: a list of pair of touples defining the ranges in each sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
@@ -158,9 +161,14 @@ julia> outDic  = ods_readall("spreadsheet.ods";sheetsPos=[1,3],ranges=[((1,1),(3
 Dict{Any,Any} with 2 entries:
   3 => Dict{Any,Any}(Pair{Any,Any}("c",Any[33.0,43.0,53.0,63.0]),Pair{Any,Any}("b",Any[32.0,42.0,52.0,62.0]),Pair{Any,Any}("d",Any[34.0,44.0,54.…
   1 => Dict{Any,Any}(Pair{Any,Any}("c",Any[23.0,33.0]),Pair{Any,Any}("b",Any[22.0,32.0]),Pair{Any,Any}("a",Any[21.0,31.0]))
+julia> data = @pipe HTTP.get("https://github.com/sylvaticus/OdsIO.jl/raw/master/test/spreadsheet.ods").body |> ods_readall(_)
+Dict{Any, Any} with 3 entries:
+  "Sheet1" => Any["h1" "h2" "h3"; "a" "b" "c"; "aa" "bb" "cc"]
+  "Sheet2" => Any["a" "b" "c"; 21 22 23; 31 32 33]
+  "Sheet3" => Any[nothing nothing nothing nothing; nothing "b" "c" "d"; … ; nothing 52 53 54; nothing 62 63 64]
 ```
 """
-function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String[],sheetsPos::AbstractVector=Int64[],ranges::AbstractVector=Tuple{Tuple{Int64,Int64},Tuple{Int64,Int64}}[],innerType::AbstractString="Matrix")
+function ods_readall(filename_or_stream;sheetsNames::AbstractVector=String[],sheetsPos::AbstractVector=Int64[],ranges::AbstractVector=Tuple{Tuple{Int64,Int64},Tuple{Int64,Int64}}[],innerType::AbstractString="Matrix")
 
     #try
     #   @pyimport ezodf
@@ -169,10 +177,20 @@ function ods_readall(filename::AbstractString;sheetsNames::AbstractVector=String
     #end
     #@pyimport ezodf
     toReturn = Dict() # The outer container is always a dictionary
-    try
-      global doc = ezodf.opendoc(filename)
-    catch
-      error("I can not open for reading file $filename at $(pwd())")
+    if typeof(filename_or_stream) <: AbstractString
+        try
+        global doc = ezodf.opendoc(filename_or_stream)
+        catch
+        error("I can not open for reading file $filename_or_stream at $(pwd())")
+        end
+    else
+        #println(typeof(filename_or_stream))
+        global doc = ezodf.opendoc(pyio.BytesIO(filename_or_stream))
+        try
+            global doc = ezodf.opendoc(pyio.BytesIO(filename_or_stream))
+        catch
+            error("I can not open for reading stream $filename_or_stream.")
+        end
     end
 
     nsheets = length(doc.sheets)
@@ -285,11 +303,12 @@ end # end functionSS
 
 
 """
-    ods_read(filename; <keyword arguments>)
+    ods_read(filename_or_stream; <keyword arguments>)
 
-Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file..
+Return a  table|dictionary|dataframe from a sheet (or range within a sheet) in a OpenDocument Spreadsheet (.ods) file (or stream)..
 
 # Arguments
+* `fileaname_or_stream`: file name or stream as `Vector{UInt8}`
 * `sheetName=nothing`: the sheet name from which to import data.
 * `sheetPos=nothing`: the position of the sheet (starting from 1) from which to import data.
 * `range=nothing`: a pair of touples defining the range in the sheet from which to import data, in the format ((tlr,tlc),(brr,brc))
@@ -314,11 +333,11 @@ julia> df = ods_read("spreadsheet.ods";sheetName="Sheet2",retType="DataFrame")
 │ 3   │ 31.0 │ 32.0 │ 33.0 │
 ```
 """
-function ods_read(filename::AbstractString; sheetName=nothing, sheetPos=nothing, range=nothing, retType::AbstractString="Matrix")
+function ods_read(filename_or_stream; sheetName=nothing, sheetPos=nothing, range=nothing, retType::AbstractString="Matrix")
     sheetsNames_h = (sheetName == nothing ? [] : [sheetName])
     sheetsPos_h = (sheetPos == nothing ? [] : [sheetPos])
     ranges_h = (range == nothing ? [] : [range])
-    dict = ods_readall(filename;sheetsNames=sheetsNames_h,sheetsPos=sheetsPos_h,ranges=ranges_h,innerType=retType)
+    dict = ods_readall(filename_or_stream;sheetsNames=sheetsNames_h,sheetsPos=sheetsPos_h,ranges=ranges_h,innerType=retType)
     for (k,v) in dict
        return v # only one value should be present
     end

@@ -1,5 +1,6 @@
-using OdsIO, DataFrames
 using Test
+using OdsIO, DataFrames
+using Pipe, HTTP
 
 # TEST 1: Just that everything is installed
 @test 1 == odsio_autotest()
@@ -21,6 +22,15 @@ filename = "testspreadsheet"
 ods_write(filename,Dict(("TestSheetDf",1,1)=>dfIn))
 dfOut = ods_read(filename; sheetName="TestSheetDf", retType="DataFrame")
 rm(filename)
+dataFromFile = ods_read(joinpath(@__DIR__,"spreadsheet.ods"))
+
+#urlData = "https://github.com/sylvaticus/OdsIO.jl/blob/master/test/spreadsheet.ods?raw=true"
+urlData = "https://github.com/sylvaticus/OdsIO.jl/raw/master/test/spreadsheet.ods"
+
+data = @pipe HTTP.get(urlData).body |> ods_readall(_)
+@test data["Sheet1"][1,1] == "h1"
+data = @pipe HTTP.get(urlData).body |> ods_read(_)
+@test data == dataFromFile 
 
 # @test dfIn == dfOut #would not pass because dataframe report the equal test as "missing" not as "true" because of the propagation of missing values
 # I need to check each single column time and value
