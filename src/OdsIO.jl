@@ -366,7 +366,7 @@ Convert a mixed-type Matrix to DataFrame
 """
 function toDf!(m)
     [m[i,j]==nothing ? m[i,j]=missing : m[i,j] for i in 2:size(m)[1], j in 1:size(m)[2]]
-    return DataFrame([[m[2:end,i]...] for i in 1:size(m,2)], Symbol.(m[1,:]))
+    return DataFrame([[m[2:end,i]...] for i in 1:size(m,2)], Symbol.(m[1,:]); makeunique=true)
 end
 
 """
@@ -376,7 +376,7 @@ Convert a mixed-type Matrix to DataFrame
 """
 function toDf(m)
     m2 = [m[i,j]==nothing ? missing : m[i,j] for i in 1:size(m)[1], j in 1:size(m)[2]]
-    return DataFrame([[m2[2:end,i]...] for i in 1:size(m2,2)], Symbol.(m2[1,:]))
+    return DataFrame([[m2[2:end,i]...] for i in 1:size(m2,2)], Symbol.(m2[1,:]); makeunique=true)
 end
 
 
